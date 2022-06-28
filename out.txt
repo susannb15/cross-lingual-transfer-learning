@@ -1,0 +1,66 @@
+INPUT:	Der Lehrer begrüßte
+
+WORD:	 seinen
+PROB:	tensor([2.1457e-06])
+WORD:	 seine
+PROB:	tensor([6.1232e-06])
+WORD:	 ihren
+PROB:	tensor([7.4060e-07])
+WORD:	 ihre
+PROB:	tensor([1.8818e-06])
+
+INPUT:	Der Lehrer der Musikschule begrüßte
+
+WORD:	 seinen
+PROB:	tensor([2.4463e-07])
+WORD:	 seine
+PROB:	tensor([1.4519e-06])
+WORD:	 ihren
+PROB:	tensor([8.7178e-08])
+WORD:	 ihre
+PROB:	tensor([5.0199e-07])
+
+INPUT:	Der Lehrer des Kurses begrüßte
+
+WORD:	 seinen
+PROB:	tensor([1.0027e-05])
+WORD:	 seine
+PROB:	tensor([1.9599e-05])
+WORD:	 ihren
+PROB:	tensor([1.6813e-06])
+WORD:	 ihre
+PROB:	tensor([2.7800e-06])
+
+INPUT:	Die Lehrerin begrüßte
+
+WORD:	 seinen
+PROB:	tensor([2.8371e-07])
+WORD:	 seine
+PROB:	tensor([9.7738e-07])
+WORD:	 ihren
+PROB:	tensor([2.9159e-06])
+WORD:	 ihre
+PROB:	tensor([8.6988e-06])
+
+INPUT:	Die Lehrerin der Musikschule begrüßte
+
+WORD:	 seinen
+PROB:	tensor([1.8841e-08])
+WORD:	 seine
+PROB:	tensor([2.0342e-07])
+WORD:	 ihren
+PROB:	tensor([3.8236e-08])
+WORD:	 ihre
+PROB:	tensor([4.0240e-07])
+
+INPUT:	Die Lehrerin des Kurses begrüßte
+
+WORD:	 seinen
+PROB:	tensor([4.8130e-07])
+WORD:	 seine
+PROB:	tensor([1.4372e-06])
+WORD:	 ihren
+PROB:	tensor([5.5172e-06])
+WORD:	 ihre
+PROB:	tensor([1.4447e-05])
+

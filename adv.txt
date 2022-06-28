@@ -1,0 +1,20 @@
+m	Der Lehrer begrüßte heute
+m	Der Lehrer ging zu
+m	Der Lehrer ging heute zu
+m	Mein Vater ist größer als
+m	Der Lehrer sagte gestern zu
+m	Er verhandelte mit
+m	Er verhandelte heute mit
+m	Der Arbeiter traf sich mit
+m	Der Arzt behandelte gestern
+m	Der Professor trifft sich heute mit
+f	Die Lehrerin begrüßte heute
+f	Die Lehrerin ging zu
+f	Die Lehrerin ging heute zu
+f	Meine Mutter ist größer als
+f	Die Lehrerin sagte gestern zu
+f	Sie verhandelte mit
+f	Sie verhandelte heute mit
+f	Die Arbeiterin traf sich mit
+f	Die Ärztin behandelte gestern
+f	Die Professorin trifft sich heute mit

@@ -1,0 +1,177 @@
+DETAILS FOR:	native_model
+CONDITION:	simple
+CORRECT	100.0	INCORRECT	0.0
+CONDITION:	adv
+CORRECT	100.0	INCORRECT	0.0
+CONDITION:	genitiv
+CORRECT	100.0	INCORRECT	0.0
+CONDITION:	nebensatz
+INCORRECT PRED AT:	m	Er kaufte sich Lehrbücher, die die Lehrerin empfohlen hatte, um sich auf
+
+CORRECT	95.0	INCORRECT	5.0
+DETAILS FOR:	de_model
+CONDITION:	simple
+INCORRECT PRED AT:	m	Der Lehrer begrüßte
+
+INCORRECT PRED AT:	m	Der Mann sah
+
+INCORRECT PRED AT:	m	Der Arzt behandelte
+
+INCORRECT PRED AT:	m	Der Polizist suchte
+
+INCORRECT PRED AT:	m	Der Vater ruft
+
+INCORRECT PRED AT:	m	Der Arbeiter isst
+
+INCORRECT PRED AT:	m	Der Chef betritt
+
+INCORRECT PRED AT:	m	Der Professor unterrichtet
+
+INCORRECT PRED AT:	m	Der Anwalt öffnet
+
+INCORRECT PRED AT:	m	Der Wissenschaftler verwendet
+
+CORRECT	50.0	INCORRECT	50.0
+CONDITION:	adv
+INCORRECT PRED AT:	m	Der Lehrer begrüßte heute
+
+INCORRECT PRED AT:	m	Der Lehrer ging zu
+
+INCORRECT PRED AT:	m	Der Lehrer ging heute zu
+
+INCORRECT PRED AT:	m	Mein Vater ist größer als
+
+INCORRECT PRED AT:	m	Der Lehrer sagte gestern zu
+
+INCORRECT PRED AT:	m	Er verhandelte mit
+
+INCORRECT PRED AT:	m	Er verhandelte heute mit
+
+INCORRECT PRED AT:	m	Der Arbeiter traf sich mit
+
+INCORRECT PRED AT:	m	Der Arzt behandelte gestern
+
+INCORRECT PRED AT:	m	Der Professor trifft sich heute mit
+
+CORRECT	50.0	INCORRECT	50.0
+CONDITION:	genitiv
+INCORRECT PRED AT:	m	Der Lehrer der Musikschule begrüßte
+
+INCORRECT PRED AT:	m	Der Lehrer des Kurses begrüßte
+
+INCORRECT PRED AT:	m	Der Professor der Fachrichtung sah
+
+INCORRECT PRED AT:	m	Der Herr des Hauses empfing
+
+INCORRECT PRED AT:	m	Der Präsident der Universität begrüßte
+
+INCORRECT PRED AT:	m	Der Beamte des Dienstes sah
+
+INCORRECT PRED AT:	m	Der Bürgermeister der Stadt sucht 
+
+INCORRECT PRED AT:	m	Der Arzt des Krankenhauses behandelte
+
+INCORRECT PRED AT:	m	Der Chef der Firma öffnet
+
+INCORRECT PRED AT:	m	Der Bruder des Mannes betritt
+
+CORRECT	50.0	INCORRECT	50.0
+CONDITION:	nebensatz
+INCORRECT PRED AT:	m	Der Lehrer, der gestern zur Schule ging, begrüßt
+
+INCORRECT PRED AT:	m	Weil der Lehrer gestern in der Schule war, begrüßte er
+
+INCORRECT PRED AT:	m	Er kaufte sich Lehrbücher, um sich auf  
+
+INCORRECT PRED AT:	m	Er kaufte sich Lehrbücher, die die Lehrerin empfohlen hatte, um sich auf
+
+INCORRECT PRED AT:	m	Der Mann nimmt eine große Tasche mit, um
+
+INCORRECT PRED AT:	m	Er kaufte sich Lehrbücher, die der Lehrer empfohlen hatte, um sich auf
+
+INCORRECT PRED AT:	m	Der Mann nimmt einen großen Beutel mit, um
+
+INCORRECT PRED AT:	m	Er will wissen, wann
+
+INCORRECT PRED AT:	m	Während der Wissenschaftler nachdachte, kam ein Mitarbeiter in
+
+INCORRECT PRED AT:	m	Während der Wissenschaftler nachdachte, kam eine Mitarbeiterin in
+
+CORRECT	50.0	INCORRECT	50.0
+DETAILS FOR:	es_model
+CONDITION:	simple
+INCORRECT PRED AT:	m	Der Lehrer begrüßte
+
+INCORRECT PRED AT:	m	Der Mann sah
+
+INCORRECT PRED AT:	m	Der Polizist suchte
+
+INCORRECT PRED AT:	m	Der Chef betritt
+
+INCORRECT PRED AT:	m	Der Anwalt öffnet
+
+INCORRECT PRED AT:	m	Der Wissenschaftler verwendet
+
+INCORRECT PRED AT:	f	Die Polizistin suchte
+
+INCORRECT PRED AT:	f	Die Mutter ruft
+
+INCORRECT PRED AT:	f	Die Arbeiterin isst
+
+CORRECT	55.00000000000001	INCORRECT	45.0
+CONDITION:	adv
+INCORRECT PRED AT:	m	Der Lehrer begrüßte heute
+
+INCORRECT PRED AT:	m	Der Lehrer ging heute zu
+
+INCORRECT PRED AT:	m	Mein Vater ist größer als
+
+INCORRECT PRED AT:	m	Er verhandelte mit
+
+INCORRECT PRED AT:	m	Er verhandelte heute mit
+
+INCORRECT PRED AT:	m	Der Arzt behandelte gestern
+
+INCORRECT PRED AT:	f	Meine Mutter ist größer als
+
+INCORRECT PRED AT:	f	Die Arbeiterin traf sich mit
+
+INCORRECT PRED AT:	f	Die Professorin trifft sich heute mit
+
+CORRECT	55.00000000000001	INCORRECT	45.0
+CONDITION:	genitiv
+INCORRECT PRED AT:	m	Der Lehrer des Kurses begrüßte
+
+INCORRECT PRED AT:	m	Der Professor der Fachrichtung sah
+
+INCORRECT PRED AT:	m	Der Präsident der Universität begrüßte
+
+INCORRECT PRED AT:	m	Der Beamte des Dienstes sah
+
+INCORRECT PRED AT:	m	Der Bürgermeister der Stadt sucht 
+
+INCORRECT PRED AT:	m	Der Chef der Firma öffnet
+
+INCORRECT PRED AT:	m	Der Bruder des Mannes betritt
+
+CORRECT	65.0	INCORRECT	35.0
+CONDITION:	nebensatz
+INCORRECT PRED AT:	m	Der Lehrer, der gestern zur Schule ging, begrüßt
+
+INCORRECT PRED AT:	m	Weil der Lehrer gestern in der Schule war, begrüßte er
+
+INCORRECT PRED AT:	m	Er kaufte sich Lehrbücher, die die Lehrerin empfohlen hatte, um sich auf
+
+INCORRECT PRED AT:	m	Der Mann nimmt eine große Tasche mit, um
+
+INCORRECT PRED AT:	m	Er kaufte sich Lehrbücher, die der Lehrer empfohlen hatte, um sich auf
+
+INCORRECT PRED AT:	m	Der Mann nimmt einen großen Beutel mit, um
+
+INCORRECT PRED AT:	m	Er will wissen, wann
+
+INCORRECT PRED AT:	m	Während der Wissenschaftler nachdachte, kam ein Mitarbeiter in
+
+INCORRECT PRED AT:	m	Während der Wissenschaftler nachdachte, kam eine Mitarbeiterin in
+
+CORRECT	55.00000000000001	INCORRECT	45.0

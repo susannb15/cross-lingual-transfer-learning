@@ -1,0 +1,20 @@
+m	Der Lehrer, der gestern zur Schule ging, begrüßt
+m	Weil der Lehrer gestern in der Schule war, begrüßte er
+m	Er kaufte sich Lehrbücher, um sich auf  
+m	Er kaufte sich Lehrbücher, die die Lehrerin empfohlen hatte, um sich auf
+m	Der Mann nimmt eine große Tasche mit, um
+m	Er kaufte sich Lehrbücher, die der Lehrer empfohlen hatte, um sich auf
+m	Der Mann nimmt einen großen Beutel mit, um
+m	Er will wissen, wann
+m	Während der Wissenschaftler nachdachte, kam ein Mitarbeiter in
+m	Während der Wissenschaftler nachdachte, kam eine Mitarbeiterin in
+f	Die Lehrerin, die gestern zur Schule ging, begrüßt
+f	Weil die Lehrerin gestern in der Schule war, begrüßte sie
+f	Sie kaufte sich Lehrbücher, um sich auf
+f	Sie kaufte sich Lehrbücher, die der Lehrer empfohlen hatte, um sich auf
+f	Die Frau nimmt eine große Tasche mit, um
+f	Sie kaufte sich Lehrbücher, die die Lehrerin empfohlen hatte, um sich auf
+f	Die Frau nimmt einen großen Beutel mit, um
+f	Sie will wissen, wann
+f	Während die Wissenschaftlerin nachdachte, kam ein Mitarbeiter in
+f	Während die Wissenschaftlerin nachdachte, kam eine Mitarbeiterin in
