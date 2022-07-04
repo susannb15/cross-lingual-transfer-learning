@@ -177,7 +177,7 @@ OPTIMIZER_NAME = "optimizer.pt"
 SCHEDULER_NAME = "scheduler.pt"
 SCALER_NAME = "scaler.pt"
 
-class Mod_Trainer(Trainer):
+class My_Trainer(Trainer):
 
 	def __init__(
 		self,
@@ -193,23 +193,139 @@ class Mod_Trainer(Trainer):
 		optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (None, None),
 		preprocess_logits_for_metrics: Callable[[torch.Tensor, torch.Tensor], torch.Tensor] = None,):
 		super().__init__(
-		model,
-		args,
-		data_collator,
-		train_dataset,
-		eval_dataset,
-		tokenizer,
-		model_init,
-		compute_metrics,
-		callbacks,
-		optimizers,
-		preprocess_logits_for_metrics,
+		model, args, data_collator, train_dataset, eval_dataset, tokenizer, model_init, compute_metrics, callbacks, optimizers, preprocess_logits_for_metrics
 )
+		self._pronoun_counter = 0
 
-	def _inner_training_loop(
-		self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
+	def _remove_unused_columns(self, dataset: "datasets.Dataset", description: Optional[str] = None):
+		if not self.args.remove_unused_columns:
+			return dataset
+		if self._signature_columns is None:
+			# Inspect model forward signature to keep only the arguments it accepts.
+			signature = inspect.signature(self.model.forward)
+			self._signature_columns = list(signature.parameters.keys())
+			# Labels may be named label or label_ids, the default data collator handles that.
+			self._signature_columns += ["label", "label_ids"] 
+
+		ignored_columns = list(set(dataset.column_names) - set(self._signature_columns))
+		if len(ignored_columns) > 0:
+			dset_description = "" if description is None else f"in the {description} set "
+			logger.info(
+				f"The following columns {dset_description} don't have a corresponding argument in "
+				f"`{self.model.__class__.__name__}.forward` and have been ignored: {', '.join(ignored_columns)}."
+				f" If {', '.join(ignored_columns)} are not expected by `{self.model.__class__.__name__}.forward`, "
+				f" you can safely ignore this message."
+			)
+
+		columns = [k for k in self._signature_columns if k in dataset.column_names]
+
+		if version.parse(datasets.__version__) < version.parse("1.4.0"):
+			dataset.set_format(
+				type=dataset.format["type"], columns=columns, format_kwargs=dataset.format["format_kwargs"]
+			)
+			return dataset
+		else:
+			return dataset.remove_columns(ignored_columns)
+
+	def train(
+		self,
+		resume_from_checkpoint: Optional[Union[str, bool]] = None,
+		trial: Union["optuna.Trial", Dict[str, Any]] = None,
+		ignore_keys_for_eval: Optional[List[str]] = None,
+		**kwargs,
 	):
-		self._train_batch_size = batch_size
+		"""
+		Main training entry point.
+
+		Args:
+			resume_from_checkpoint (`str` or `bool`, *optional*):
+				If a `str`, local path to a saved checkpoint as saved by a previous instance of [`Trainer`]. If a
+				`bool` and equals `True`, load the last checkpoint in *args.output_dir* as saved by a previous instance
+				of [`Trainer`]. If present, training will resume from the model/optimizer/scheduler states loaded here.
+			trial (`optuna.Trial` or `Dict[str, Any]`, *optional*):
+				The trial run or the hyperparameter dictionary for hyperparameter search.
+			ignore_keys_for_eval (`List[str]`, *optional*)
+				A list of keys in the output of your model (if it is a dictionary) that should be ignored when
+				gathering predictions for evaluation during the training.
+			kwargs:
+				Additional keyword arguments used to hide deprecated arguments
+		"""
+		resume_from_checkpoint = None if not resume_from_checkpoint else resume_from_checkpoint
+
+		# memory metrics - must set up as early as possible
+		self._memory_tracker.start()
+
+		args = self.args
+
+		self.is_in_train = True
+
+		# do_train is not a reliable argument, as it might not be set and .train() still called, so
+		# the following is a workaround:
+		if (args.fp16_full_eval or args.bf16_full_eval) and not args.do_train:
+			self._move_model_to_device(self.model, args.device)
+
+		if "model_path" in kwargs:
+			resume_from_checkpoint = kwargs.pop("model_path")
+			warnings.warn(
+				"`model_path` is deprecated and will be removed in a future version. Use `resume_from_checkpoint` "
+				"instead.",
+				FutureWarning,
+			)
+		if len(kwargs) > 0:
+			raise TypeError(f"train() received got unexpected keyword arguments: {', '.join(list(kwargs.keys()))}.")
+		# This might change the seed so needs to run first.
+		self._hp_search_setup(trial)
+
+		# Model re-init
+		model_reloaded = False
+		if self.model_init is not None:
+			# Seed must be set before instantiating the model when using model_init.
+			set_seed(args.seed)
+			self.model = self.call_model_init(trial)
+			model_reloaded = True
+			# Reinitializes optimizer and scheduler
+			self.optimizer, self.lr_scheduler = None, None
+
+		# Load potential model checkpoint
+		if isinstance(resume_from_checkpoint, bool) and resume_from_checkpoint:
+			resume_from_checkpoint = get_last_checkpoint(args.output_dir)
+			if resume_from_checkpoint is None:
+				raise ValueError(f"No valid checkpoint found in output directory ({args.output_dir})")
+
+		if resume_from_checkpoint is not None:
+			if not os.path.isfile(os.path.join(resume_from_checkpoint, WEIGHTS_NAME)):
+				raise ValueError(f"Can't find a valid checkpoint at {resume_from_checkpoint}")
+
+			logger.info(f"Loading model from {resume_from_checkpoint}).")
+
+			if os.path.isfile(os.path.join(resume_from_checkpoint, CONFIG_NAME)):
+				config = PretrainedConfig.from_json_file(os.path.join(resume_from_checkpoint, CONFIG_NAME))
+				checkpoint_version = config.transformers_version
+				if checkpoint_version is not None and checkpoint_version != __version__:
+					logger.warning(
+						f"You are resuming training from a checkpoint trained with {checkpoint_version} of "
+						f"Transformers but your current version is {__version__}. This is not recommended and could "
+						"yield to errors or unwanted behaviors."
+					)
+
+			if args.deepspeed:
+				# will be resumed in deepspeed_init
+				pass
+			else:
+				# We load the model state dict on the CPU to avoid an OOM error.
+				state_dict = torch.load(os.path.join(resume_from_checkpoint, WEIGHTS_NAME), map_location="cpu")
+				# If the model is on the GPU, it still works!
+				self._load_state_dict_in_model(state_dict)
+
+				# release memory
+				del state_dict
+
+		# If model was re-initialized, put it on the right device and update self.model_wrapped
+		if model_reloaded:
+			if self.place_model_on_device:
+				self._move_model_to_device(self.model, args.device)
+			self.model_wrapped = self.model
+
 		# Data loader and number of training steps
 		train_dataloader = self.get_train_dataloader()
 
@@ -260,10 +376,7 @@ class Mod_Trainer(Trainer):
 				debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
 
 		delay_optimizer_creation = (
-			self.sharded_ddp is not None
-			and self.sharded_ddp != ShardedDDPOption.SIMPLE
-			or is_sagemaker_mp_enabled()
-			or self.fsdp is not None
+			self.sharded_ddp is not None and self.sharded_ddp != ShardedDDPOption.SIMPLE or is_sagemaker_mp_enabled()
 		)
 		if args.deepspeed:
 			deepspeed_engine, optimizer, lr_scheduler = deepspeed_init(
@@ -406,9 +519,6 @@ class Mod_Trainer(Trainer):
 			)
 			self.control = self.callback_handler.on_epoch_begin(args, self.state, self.control)
 
-			if epoch == epochs_trained and resume_from_checkpoint is not None and steps_trained_in_current_epoch == 0:
-				self._load_rng_state(resume_from_checkpoint)
-
 			step = -1
 			for step, inputs in enumerate(epoch_iterator):
 
@@ -506,12 +616,16 @@ class Mod_Trainer(Trainer):
 					if optimizer_was_run and not self.deepspeed:
 						self.lr_scheduler.step()
 
+					 # log gradient norm
+					parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
+					grad_norms = {n: torch.linalg.norm(p.grad.detach(), ord=2).item() for (n, p) in parameters}	
+
 					model.zero_grad()
 					self.state.global_step += 1
 					self.state.epoch = epoch + (step + 1) / steps_in_epoch
 					self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
-					self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+					self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval, grad_norms=grad_norms)
 				else:
 					self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
 
@@ -526,7 +640,7 @@ class Mod_Trainer(Trainer):
 				self.control.should_training_stop = True
 
 			self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
-			self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+			self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval, grad_norms=grad_norms)
 
 			if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
 				if is_torch_tpu_available():
@@ -552,12 +666,37 @@ class Mod_Trainer(Trainer):
 			elif args.local_rank != -1:
 				dist.barrier()
 
-			self._load_best_model()
+			logger.info(
+				f"Loading best model from {self.state.best_model_checkpoint} (score: {self.state.best_metric})."
+			)
+
+			best_model_path = os.path.join(self.state.best_model_checkpoint, WEIGHTS_NAME)
+			if os.path.exists(best_model_path):
+				if self.deepspeed:
+					# temp hack until Deepspeed fixes the problem with resume from an existing engine that did some stepping
+					deepspeed_engine, optimizer, lr_scheduler = deepspeed_reinit(self)
+					self.model = deepspeed_engine.module
+					self.model_wrapped = deepspeed_engine
+					self.deepspeed = deepspeed_engine
+					self.optimizer = optimizer
+					self.lr_scheduler = lr_scheduler
+					self.deepspeed.load_checkpoint(
+						self.state.best_model_checkpoint, load_optimizer_states=True, load_lr_scheduler_states=True
+					)
+				else:
+					# We load the model state dict on the CPU to avoid an OOM error.
+					state_dict = torch.load(best_model_path, map_location="cpu")
+					# If the model is on the GPU, it still works!
+					self._load_state_dict_in_model(state_dict)
+			else:
+				logger.warning(
+					f"Could not locate the best model at {best_model_path}, if you are running a distributed training "
+					"on multiple nodes, you should activate `--save_on_each_node`."
+				)
 
 		# add remaining tr_loss
 		self._total_loss_scalar += tr_loss.item()
 		train_loss = self._total_loss_scalar / self.state.global_step
-		
 
 		metrics = speed_metrics("train", start_time, num_samples=num_train_samples, num_steps=self.state.max_steps)
 		self.store_flos()
@@ -574,7 +713,8 @@ class Mod_Trainer(Trainer):
 
 		return TrainOutput(self.state.global_step, train_loss, metrics)
 
-	def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):
+
+	def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval, grad_norms={}):
 		if self.control.should_log:
 			if is_torch_tpu_available():
 				xm.mark_step()
@@ -591,11 +731,10 @@ class Mod_Trainer(Trainer):
 			logs["learning_rate"] = self._get_learning_rate()
 
 			logs["perplexity"] = math.exp(logs["loss"])
-			# calculate gradient norm (L2 norm)
-			parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
-			grad_norms = {n: torch.linalg.norm(p.grad.detach(), ord=2).item() for (n, p) in parameters}
 			for n in grad_norms:
 				logs[n] = grad_norms[n]
+
+		#	logs["num_poss"] = self.pos
 
 			self._total_loss_scalar += tr_loss_scalar
 			self._globalstep_last_logged = self.state.global_step
