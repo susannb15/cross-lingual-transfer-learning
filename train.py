@@ -200,6 +200,7 @@ training_args = TrainingArguments(
 	num_train_epochs=25,
 	eval_steps=1000,
 	save_steps=1000,
+	warmup_steps = 3700,
 	seed=42
 )
 

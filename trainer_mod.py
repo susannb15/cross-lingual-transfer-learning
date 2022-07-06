@@ -15,6 +15,7 @@ import warnings
 from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from collections import defaultdict
 
 from tqdm.auto import tqdm
 
@@ -177,6 +178,9 @@ OPTIMIZER_NAME = "optimizer.pt"
 SCHEDULER_NAME = "scheduler.pt"
 SCALER_NAME = "scaler.pt"
 
+
+from transformers import AutoTokenizer
+
 class My_Trainer(Trainer):
 
 	def __init__(
@@ -195,7 +199,12 @@ class My_Trainer(Trainer):
 		super().__init__(
 		model, args, data_collator, train_dataset, eval_dataset, tokenizer, model_init, compute_metrics, callbacks, optimizers, preprocess_logits_for_metrics
 )
-		self._pronoun_counter = 0
+
+		self._tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
+		self._pronoun_counter = defaultdict(int)
+		#self._pronouns = self._tokenizer.convert_tokens_to_ids(self._tokenizer.tokenize("sein"))
+		self._pronouns = np.array(self._tokenizer([" sein", " seine", " seiner", " seinen", " seinem", " seines", " ihr", " ihre", " ihrer", " ihren", " ihrem", " ihres"])["input_ids"]).flat
+	
 
 	def _remove_unused_columns(self, dataset: "datasets.Dataset", description: Optional[str] = None):
 		if not self.args.remove_unused_columns:
@@ -522,6 +531,7 @@ class My_Trainer(Trainer):
 			step = -1
 			for step, inputs in enumerate(epoch_iterator):
 
+
 				# Skip past any already trained steps if resuming training
 				if steps_trained_in_current_epoch > 0:
 					steps_trained_in_current_epoch -= 1
@@ -616,6 +626,9 @@ class My_Trainer(Trainer):
 					if optimizer_was_run and not self.deepspeed:
 						self.lr_scheduler.step()
 
+
+					self._count_pronouns(inputs)
+					
 					 # log gradient norm
 					parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
 					grad_norms = {n: torch.linalg.norm(p.grad.detach(), ord=2).item() for (n, p) in parameters}	
@@ -731,10 +744,11 @@ class My_Trainer(Trainer):
 			logs["learning_rate"] = self._get_learning_rate()
 
 			logs["perplexity"] = math.exp(logs["loss"])
+			print(self._pronoun_counter)
+			logs["PossessivePronouns"] = sum(self._pronoun_counter.values())
 			for n in grad_norms:
 				logs[n] = grad_norms[n]
 
-		#	logs["num_poss"] = self.pos
 
 			self._total_loss_scalar += tr_loss_scalar
 			self._globalstep_last_logged = self.state.global_step
@@ -750,3 +764,7 @@ class My_Trainer(Trainer):
 		if self.control.should_save:
 			self._save_checkpoint(model, trial, metrics=metrics)
 			self.control = self.callback_handler.on_save(self.args, self.state, self.control)
+
+	def _count_pronouns(self, batch):
+		for p in self._pronouns:
+			self._pronoun_counter[self._tokenizer.decode(p)] += torch.numel(batch["input_ids"][batch["input_ids"]== p])
