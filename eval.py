@@ -13,13 +13,6 @@ import math
 from trainer_mod import My_Trainer
 
 
-parser = argparse.ArgumentParser(description="Options")
-
-parser.add_argument('--model', type=str, required=True, 
-					help="Model. Options: de, es")
-
-args = parser.parse_args()
-
 datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[11:13%]')
@@ -56,61 +49,10 @@ def show_random_elements(dataset, num_examples=10):
 
 #print(show_random_elements(datasets["train"]))
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead
 
-de_config = AutoConfig.from_pretrained("dbmdz/german-gpt2")
-de_config.attn_pdrop = 0.1
-de_config.embd_pdrop = 0.1
-de_config.resid_pdrop = 0.1
-de_model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2", config=de_config)
-
-if args.model == "es":
-	#tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
-	tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
-	model = AutoModelForCausalLM.from_pretrained("datificate/gpt2-small-spanish")
-	embeddings = model.transformer.wte.weight
-	perm = torch.randperm(embeddings.shape[0])
-	copy_idx = perm[:8]
-	copies = embeddings[copy_idx]
-	extended_emb = torch.cat((embeddings, copies), 0)
-	idx = torch.randperm(extended_emb.shape[0])
-	shuffled = extended_emb[idx]
-	model.transformer.wte.weight = nn.Parameter(shuffled)
-
-	#lm_head = model.transformer.wte.weight
-	model.tie_weights()
-	print("TIED EMBEDDINGS?", hasattr(model, "tie_weights"), model.transformer.wte.weight is model.lm_head.weight)
-	"""
-	lm_head = model.lm_head.weight
-	perm = torch.randperm(lm_head.shape[0])
-	copy_idx = perm[:8]
-	copies = lm_head[copy_idx]
-	extended_head = torch.cat((lm_head, copies), 0)
-	idx = torch.randperm(extended_head.shape[0])
-	shuffled = extended_head[idx]
-	model.lm_head.weight = nn.Parameter(shuffled)
-	"""
-elif args.model == "de":
-	tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
-	model = de_model
-	de_embeddings = de_model.transformer.wte.weight # DE word token embeddings
-	idx = torch.randperm(de_embeddings.shape[0])
-	de_emb_shuffled = de_embeddings[idx]
-	model.transformer.wte.weight = nn.Parameter(de_emb_shuffled)
-
-	model.tie_weights()
-	"""
-	lm_head = model.lm_head.weight
-	idx = torch.randperm(lm_head.shape[0])
-	shuffled = lm_head[idx]
-	model.lm_head.weight = nn.Parameter(shuffled)
-	"""
-	#print("TIED EMBEDDINGS?", hasattr(model, "tie_weights"), model.transformer.wte.weight is model.lm_head.weight)
-	
-
-else:
-	print("Illegal model name. Choose between: es, de")
-
+model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
+tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 #print("EMB SHAPE")
 #print(de_emb_shuffled.shape)
 #de_emb_shuffled = de_emb_shuffled[:50257]
@@ -128,13 +70,10 @@ def freeze_model(model):
 # freeze es model parameters except embeddings
 freeze_model(model)
 model.transformer.wte.weight.requires_grad = True
-model.lm_head.weight.requires_grad = True
 #print("test freeze")
 #for name, param in model.named_parameters():
     #if param.requires_grad:
         #print(name)
-
-print(model)
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])
@@ -198,15 +137,12 @@ from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
 
 training_args = TrainingArguments(
-    args.model+"_model",
-	do_train=True,
+    "native_model",
+	do_train=False,
     evaluation_strategy = "epoch",
     learning_rate=2e-5,
     weight_decay=0.01,
-	num_train_epochs=25,
-	eval_steps=1000,
-	save_steps=1000,
-	warmup_steps = 3700,
+	num_train_epochs=10,
 	seed=42
 )
 
@@ -219,5 +155,4 @@ trainer = My_Trainer(
 )
 
 
-trainer.train()
 trainer.evaluate()
