@@ -531,6 +531,9 @@ class My_Trainer(Trainer):
 			step = -1
 			for step, inputs in enumerate(epoch_iterator):
 
+				self._pronouns = np.array(self._tokenizer([" sein", " seine", " seiner", " seinen", " seinem", " seines", " ihr", " ihre", " ihrer", " ihren", " ihrem", " ihres"])["input_ids"]).flat
+				self._count_pronouns(inputs)
+
 
 				# Skip past any already trained steps if resuming training
 				if steps_trained_in_current_epoch > 0:
@@ -627,7 +630,6 @@ class My_Trainer(Trainer):
 						self.lr_scheduler.step()
 
 
-					self._count_pronouns(inputs)
 					
 					 # log gradient norm
 					parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
