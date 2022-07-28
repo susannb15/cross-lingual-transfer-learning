@@ -12,13 +12,29 @@ import argparse
 import math
 from trainer_mod import My_Trainer
 import wandb
+import random
+
+random.seed(42)
+
+"""
+#Function for initializing weights
+def _init_weights(module):
+	if isinstance(module, nn.Embedding):
+		module.weight.data.normal_(mean=0.0, std=1.0)
+		if module.padding_idx is not None:
+			module.weight.data[module.padding_idx].zero_()
+		elif isinstance(module, nn.LayerNorm):
+			module.bias.data.zero_()
+			module.weight.data.fill_(1.0)
+"""
 
 parser = argparse.ArgumentParser(description="Options")
 
 parser.add_argument('--name', type=str, help='Name of the output dir.')
 #parser.add_argument('--config', type=str, help='Config file.')
+parser.add_argument('--lr', default=2e-5, help='Learning rate')
 parser.add_argument('--group', type=str, help='Group parameter for wandb')
-parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en")
+parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
 parser.add_argument('--tied_weights', action='store_true')
 parser.add_argument('--no-tied_weights', dest='tied_weights', action='store_false')
 parser.set_defaults(tied_weights=True)
@@ -52,7 +68,7 @@ def show_random_elements(dataset, num_examples=10):
 			df[column] = df[column].transform(lambda i: typ.names[i])
 
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel
 
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 
@@ -79,9 +95,31 @@ elif args.model_lng == "de":
 elif args.model_lng == "en":
 	print("Not implemented")
 
+elif args.model_lng == "gpt2":
+	config = AutoConfig.from_pretrained(
+	"gpt2",
+	vocab_size=len(tokenizer),
+	n_ctx=128,
+	bos_token_id=tokenizer.bos_token_id,
+	eos_token_id=tokenizer.eos_token_id,
+	)
+	model = GPT2LMHeadModel(config)
+
 else:
 	print("Illegal option.")
 
+"""
+# shuffle parts of WTE
+embeddings = model.transformer.wte.weight
+shuffle_len = round(embeddings.shape[0]*0.1)
+shuffle_idx = torch.randperm(shuffle_len)
+rest = embeddings[shuffle_len:]
+shuffled = embeddings[shuffle_idx]
+shuffled_partly = torch.cat((shuffled, rest),0)
+model.transformer.wte.weight = nn.Parameter(shuffled_partly)
+print(embeddings.shape == model.transformer.wte.weight.shape)
+
+"""
 # shuffle WTE
 embeddings = model.transformer.wte.weight 
 idx = torch.randperm(embeddings.shape[0])
@@ -109,6 +147,10 @@ freeze_model(model)
 model.transformer.wte.weight.requires_grad = True
 if not args.tied_weights:
 	model.lm_head.weight.requires_grad = True
+
+#for name, param in model.named_parameters():
+#	if not param.requires_grad:
+#		print(name, param)
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])
@@ -167,13 +209,13 @@ from transformers.integrations import *
 training_args = TrainingArguments(
 	args.name,
 	do_train=True,
-	evaluation_strategy = "epoch",
-	learning_rate=2e-5,
+	#evaluation_strategy = "epoch",
+	learning_rate=args.lr,
 	weight_decay=0.01,
-	num_train_epochs=25,
-	eval_steps=1000,
-	save_steps=1000,
-	warmup_steps = 3700,
+	max_steps=100000,
+	eval_steps=5000,
+	save_steps=5000,
+	warmup_steps = 30000,
 	seed=42
 )
 
@@ -186,5 +228,5 @@ trainer = My_Trainer(
 )
 
 
-#trainer.train()
-#trainer.evaluate()
+trainer.train()
+trainer.evaluate()
