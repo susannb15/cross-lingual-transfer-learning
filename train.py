@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser(description="Options")
 
 parser.add_argument('--name', type=str, help='Name of the output dir.')
 #parser.add_argument('--config', type=str, help='Config file.')
-parser.add_argument('--lr', default=2e-5, help='Learning rate')
+parser.add_argument('--lr', type=float, default=2e-5, help='Learning rate')
 parser.add_argument('--group', type=str, help='Group parameter for wandb')
 parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
 parser.add_argument('--tied_weights', action='store_true')

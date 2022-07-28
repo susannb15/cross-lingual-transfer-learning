@@ -632,15 +632,16 @@ class My_Trainer(Trainer):
 
 					
 					 # log gradient norm
-					parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
-					grad_norms = {n: torch.linalg.norm(p.grad, ord=2).item() for (n, p) in parameters}	
+					#parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
+					#grad_norms = {n: torch.linalg.norm(p.grad, ord=2).item() for (n, p) in parameters}	
+					#grad_norms = {"WTE_grad_norm": torch.linalg.norm(model.transformer.wte.weight.grad, ord=2).item()} 
 
 					model.zero_grad()
 					self.state.global_step += 1
 					self.state.epoch = epoch + (step + 1) / steps_in_epoch
 					self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
-					self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval, grad_norms=grad_norms)
+					self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)#, grad_norms=grad_norms)
 				else:
 					self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
 
@@ -655,7 +656,7 @@ class My_Trainer(Trainer):
 				self.control.should_training_stop = True
 
 			self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
-			self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval, grad_norms=grad_norms)
+			self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)#, grad_norms=grad_norms)
 
 			if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
 				if is_torch_tpu_available():
