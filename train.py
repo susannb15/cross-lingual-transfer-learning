@@ -142,15 +142,19 @@ def freeze_model(model):
 		param.requires_grad = False
 		#print(name, param.shape)
 
+# unfreeze all
+def unfreeze_model(model):
+    for name, param in model.named_parameters():
+        param.requires_grad = True
+
 # freeze es model parameters except embeddings
-freeze_model(model)
+#freeze_model(model)
+# or unfreeze model
+unfreeze_model(model)
+
 model.transformer.wte.weight.requires_grad = True
 if not args.tied_weights:
 	model.lm_head.weight.requires_grad = True
-
-#for name, param in model.named_parameters():
-#	if not param.requires_grad:
-#		print(name, param)
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])

@@ -633,7 +633,7 @@ class My_Trainer(Trainer):
 					
 					 # log gradient norm
 					parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
-					grad_norms = {n: torch.linalg.norm(p.grad.detach(), ord=2).item() for (n, p) in parameters}	
+					grad_norms = {n: torch.linalg.norm(p.grad, ord=2).item() for (n, p) in parameters}	
 
 					model.zero_grad()
 					self.state.global_step += 1
