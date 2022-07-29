@@ -635,6 +635,15 @@ class My_Trainer(Trainer):
 					#parameters = [(n, p) for (n, p) in model.named_parameters() if p.grad is not None]
 					#grad_norms = {n: torch.linalg.norm(p.grad, ord=2).item() for (n, p) in parameters}	
 					#grad_norms = {"WTE_grad_norm": torch.linalg.norm(model.transformer.wte.weight.grad, ord=2).item()} 
+					total_norm = 0
+					for n, p in self.model.named_parameters():
+						if p.grad is None:
+							continue
+						grads = p.grad.view(-1)
+						grads_norm = torch.norm(grads, p=2, dim=0)
+						total_norm += grads_norm.item() ** 2
+					total_norm = total_norm ** 0.5
+					grad_norms = {"Gradient Norm": total_norm}
 
 					model.zero_grad()
 					self.state.global_step += 1

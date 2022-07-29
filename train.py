@@ -213,7 +213,7 @@ from transformers.integrations import *
 training_args = TrainingArguments(
 	args.name,
 	do_train=True,
-	#evaluation_strategy = "epoch",
+	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
 	max_steps=100000,
