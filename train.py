@@ -16,18 +16,6 @@ import random
 
 random.seed(42)
 
-"""
-#Function for initializing weights
-def _init_weights(module):
-	if isinstance(module, nn.Embedding):
-		module.weight.data.normal_(mean=0.0, std=1.0)
-		if module.padding_idx is not None:
-			module.weight.data[module.padding_idx].zero_()
-		elif isinstance(module, nn.LayerNorm):
-			module.bias.data.zero_()
-			module.weight.data.fill_(1.0)
-"""
-
 parser = argparse.ArgumentParser(description="Options")
 
 parser.add_argument('--name', type=str, help='Name of the output dir.')
@@ -44,10 +32,15 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
-validation = load_dataset("wikipedia", "20220301.de", split='train[11:13%]')
+#train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
+train = load_dataset("wikipedia", "20220301.de", split='train[:50%]')
+#validation = load_dataset("wikipedia", "20220301.de", split='train[11:13%]')
+datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation': 'tiger.txt'})
 datasets["train"] = train
-datasets["validation"] = validation
+#datasets["validation"] = validation
+
+print("DATASETS")
+print(type(datasets["train"]), type(datasets["validation"]))
 
 from datasets import ClassLabel, Value
 import random
@@ -231,6 +224,9 @@ trainer = My_Trainer(
 	eval_dataset=lm_datasets["validation"],
 )
 
+print("DATASETS")
+for d in lm_datasets:
+	print(len(d))
 
-trainer.train()
-trainer.evaluate()
+#trainer.train()
+#trainer.evaluate()
