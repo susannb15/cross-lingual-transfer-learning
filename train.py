@@ -39,8 +39,6 @@ datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation':
 datasets["train"] = train
 #datasets["validation"] = validation
 
-print("DATASETS")
-print(type(datasets["train"]), type(datasets["validation"]))
 
 from datasets import ClassLabel, Value
 import random
@@ -122,10 +120,14 @@ model.transformer.wte.weight = nn.Parameter(shuffled)
 if args.tied_weights:
 	model.tie_weights()
 else:
+	"""
+	# shuffle output embeddings
 	lm_head = model.lm_head.weight
 	idx = torch.randperm(lm_head.shape[0])
 	shuffled = lm_head[idx]
 	model.lm_head.weight = nn.Parameter(shuffled)
+	"""
+	print("Weights are NOT tied and output is NOT shuffled")
 
 print("TIED EMBEDDINGS?", model.transformer.wte.weight is model.lm_head.weight)	
 
@@ -146,8 +148,10 @@ def unfreeze_model(model):
 unfreeze_model(model)
 
 model.transformer.wte.weight.requires_grad = True
-if not args.tied_weights:
-	model.lm_head.weight.requires_grad = True
+#if not args.tied_weights:
+#	model.lm_head.weight.requires_grad = True
+
+#model.lm_head.weight.requires_grad = False
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])
@@ -209,6 +213,7 @@ training_args = TrainingArguments(
 	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
+	#num_train_epochs=1.0,
 	max_steps=100000,
 	eval_steps=5000,
 	save_steps=5000,
@@ -224,9 +229,6 @@ trainer = My_Trainer(
 	eval_dataset=lm_datasets["validation"],
 )
 
-print("DATASETS")
-for d in lm_datasets:
-	print(len(d))
 
-#trainer.train()
-#trainer.evaluate()
+trainer.train()
+trainer.evaluate()
