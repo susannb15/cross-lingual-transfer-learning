@@ -148,10 +148,10 @@ freeze_model(model)
 #unfreeze_model(model)
 
 model.transformer.wte.weight.requires_grad = True
-#if not args.tied_weights:
-#	model.lm_head.weight.requires_grad = True
+if not args.tied_weights:
+	model.lm_head.weight.requires_grad = True
 
-model.lm_head.weight.requires_grad = False
+#model.lm_head.weight.requires_grad = False
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])
