@@ -14,21 +14,11 @@ from trainer_mod import My_Trainer
 
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
-validation = load_dataset("wikipedia", "20220301.de", split='train[11:13%]')
+train = load_dataset("wikipedia", "20220301.de", split='train[:3%]')
+validation = load_dataset("wikipedia", "20220301.de", split='train[50:55%]')
 datasets["train"] = train
 datasets["validation"] = validation
 
-# add new column to store pos values 
-datasets["train"] = datasets["train"].add_column("pos", [[0]] * len(datasets["train"]))
-datasets["validation"] = datasets["validation"].add_column("pos", [[0]] * len(datasets["validation"]))
-
-print(datasets["train"].features)
-
-"""
-train = load_dataset("wikipedia", "20220301.de", split='train[:3%]')
-validation = load_dataset("wikipedia", "20220301.de", split='train[4:5%]')
-"""
 from datasets import ClassLabel, Value
 import random
 import pandas as pd
@@ -51,7 +41,7 @@ def show_random_elements(dataset, num_examples=10):
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead
 
-model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
+model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-30000")
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 #print("EMB SHAPE")
 #print(de_emb_shuffled.shape)
@@ -62,41 +52,11 @@ tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 #print(model.transformer.wte.weight.shape)
 #print(model.lm_head.weight.shape)
 
-def freeze_model(model):
-	for name, param in model.named_parameters():
-		param.requires_grad = False
-		#print(name, param.shape)
-
-# freeze es model parameters except embeddings
-freeze_model(model)
-model.transformer.wte.weight.requires_grad = True
-#print("test freeze")
-#for name, param in model.named_parameters():
-    #if param.requires_grad:
-        #print(name)
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])
 
-def pos_function(dataset):
-	pos = [" sein ", " seinen ", " seinem ", " seine ", " seines ", " seiner ", " ihr ", " ihren ", " ihrem ", " ihre ", " ihres ", " ihrer "]
-	for example in dataset:
-		count = 0
-		for p in pos:
-			count += example["text"].count(p)
-		example["pos"] = count
-
-pos_function(datasets["train"])
-pos_function(datasets["validation"])
-#datasets = datasets.map(pos_function,batched=True, num_proc=4)
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
-#tokenized_datasets = tok_datasets.map(pos_function, batched=True, num_proc=4)
-print(tokenized_datasets["train"][1])
-print(tokenized_datasets["train"].features)
-"""
-train_tok = train.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
-val_tok = validation.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
-"""
 block_size=128
 
 def group_texts(examples):
@@ -122,16 +82,6 @@ lm_datasets = tokenized_datasets.map(
     num_proc=4,
 )
 
-
-#lm_train = train_tok.map(group_texts, batched=True, batch_size=1000, num_proc=4)
-#lm_val = val_tok.map(group_texts, batched=True, batch_size=1000, num_proc=4)
-
-#print(tokenizer.decode(lm_datasets["train"][1]["input_ids"]))
-
-
-
-pos_1 = lm_datasets["train"].filter(lambda example: example["pos"] != 0)
-print(tokenizer.decode(pos_1[1]["input_ids"]))
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *

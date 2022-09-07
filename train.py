@@ -34,10 +34,10 @@ wandb.init(group=args.group)
 datasets = DatasetDict()
 #train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
 train = load_dataset("wikipedia", "20220301.de", split='train[:50%]')
-#validation = load_dataset("wikipedia", "20220301.de", split='train[11:13%]')
-datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation': 'tiger.txt'})
+validation = load_dataset("wikipedia", "20220301.de", split='train[50:55%]')
+#datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation': 'tiger.txt'})
 datasets["train"] = train
-#datasets["validation"] = validation
+datasets["validation"] = validation
 
 
 from datasets import ClassLabel, Value
@@ -87,6 +87,8 @@ elif args.model_lng == "en":
 	print("Not implemented")
 
 elif args.model_lng == "gpt2":
+	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-30000")
+	"""
 	config = AutoConfig.from_pretrained(
 	"gpt2",
 	vocab_size=len(tokenizer),
@@ -95,7 +97,7 @@ elif args.model_lng == "gpt2":
 	eos_token_id=tokenizer.eos_token_id,
 	)
 	model = GPT2LMHeadModel(config)
-
+	"""
 else:
 	print("Illegal option.")
 
@@ -148,8 +150,8 @@ freeze_model(model)
 #unfreeze_model(model)
 
 model.transformer.wte.weight.requires_grad = True
-if not args.tied_weights:
-	model.lm_head.weight.requires_grad = True
+#if not args.tied_weights:
+#	model.lm_head.weight.requires_grad = True
 
 #model.lm_head.weight.requires_grad = False
 
