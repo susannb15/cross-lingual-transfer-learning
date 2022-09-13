@@ -11,8 +11,8 @@ tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 native_model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
 
 #tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
-de_model = AutoModelForCausalLM.from_pretrained("de_model/checkpoint-35000")
-es_model = AutoModelForCausalLM.from_pretrained("es_model/checkpoint-37000")
+de_model = AutoModelForCausalLM.from_pretrained("de_frozen_except_wte/checkpoint-100000")
+es_model = AutoModelForCausalLM.from_pretrained("es_frozen_except_wte/checkpoint-100000")
 
 # input 
 # TODO: make this loadable from command line

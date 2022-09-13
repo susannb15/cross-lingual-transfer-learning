@@ -150,10 +150,16 @@ freeze_model(model)
 #unfreeze_model(model)
 
 model.transformer.wte.weight.requires_grad = True
+model.transformer.wpe.weight.requires_grad = True
 #if not args.tied_weights:
 #	model.lm_head.weight.requires_grad = True
 
 #model.lm_head.weight.requires_grad = False
+
+for name, param in model.named_parameters():
+	print("ADAPTED PARAMETERS:")
+	if param.requires_grad:
+		print(name, param.shape)
 
 def tokenize_function(examples):
 	return tokenizer(examples["text"])
