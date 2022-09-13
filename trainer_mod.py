@@ -204,7 +204,8 @@ class My_Trainer(Trainer):
 		self._pronoun_counter = defaultdict(int)
 		#self._pronouns = self._tokenizer.convert_tokens_to_ids(self._tokenizer.tokenize("sein"))
 		self._pronouns = np.array(self._tokenizer([" sein", " seine", " seiner", " seinen", " seinem", " seines", " ihr", " ihre", " ihrer", " ihren", " ihrem", " ihres"])["input_ids"]).flat
-	
+		setattr(self, 'additional_eval_datasets', True)
+
 
 	def _remove_unused_columns(self, dataset: "datasets.Dataset", description: Optional[str] = None):
 		if not self.args.remove_unused_columns:
@@ -770,8 +771,15 @@ class My_Trainer(Trainer):
 
 		metrics = None
 		if self.control.should_evaluate:
-			metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
-			self._report_to_hp_search(trial, epoch, metrics)
+			if self.additional_eval_datasets:
+				for dataset in self.eval_dataset:
+					metrics = None
+					print(f'Evaluating on {dataset}')
+					metrics = self.evaluate(self.eval_dataset[dataset], ignore_keys=ignore_keys_for_eval)
+					self._report_to_hp_search(trial, epoch, metrics)
+			else:
+				metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
+				self._report_to_hp_search(trial, epoch, metrics)
 
 		if self.control.should_save:
 			self._save_checkpoint(model, trial, metrics=metrics)

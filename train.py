@@ -32,12 +32,11 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-#train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
 train = load_dataset("wikipedia", "20220301.de", split='train[:50%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[50:55%]')
-#datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation': 'tiger.txt'})
+datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
 datasets["train"] = train
-datasets["validation"] = validation
+datasets["validation1"] = validation
 
 
 from datasets import ClassLabel, Value
@@ -156,8 +155,8 @@ model.transformer.wpe.weight.requires_grad = True
 
 #model.lm_head.weight.requires_grad = False
 
+print("ADAPTED PARAMETERS:")
 for name, param in model.named_parameters():
-	print("ADAPTED PARAMETERS:")
 	if param.requires_grad:
 		print(name, param.shape)
 
@@ -223,7 +222,7 @@ training_args = TrainingArguments(
 	weight_decay=0.01,
 	#num_train_epochs=1.0,
 	max_steps=100000,
-	eval_steps=5000,
+	eval_steps=20,
 	save_steps=5000,
 	warmup_steps = 30000,
 	seed=42
@@ -234,7 +233,7 @@ trainer = My_Trainer(
 	model=model,
 	args=training_args,
 	train_dataset=lm_datasets["train"],
-	eval_dataset=lm_datasets["validation"],
+	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"]}
 )
 
 

@@ -32,12 +32,11 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-#train = load_dataset("wikipedia", "20220301.de", split='train[:10%]')
-train = load_dataset("wikipedia", "20220301.de", split='train[:50%]')
-val_wiki = load_dataset("wikipedia", "20220301.de", split='train[50:55%]')
-datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation1': 'tiger.txt'})
+train = load_dataset("wikipedia", "20220301.de", split='train[:95%]')
+val_wiki = load_dataset("wikipedia", "20220301.de", split='train[95:%]')
+datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
 datasets["train"] = train
-datasets["validation2"] = val_wiki
+datasets["validation1"] = val_wiki
 
 from datasets import ClassLabel, Value
 import random
@@ -129,7 +128,7 @@ trainer = My_Trainer(
 	model=model,
 	args=training_args,
 	train_dataset=lm_datasets["train"],
-	eval_dataset=lm_datasets["validation1"]
+	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"]}
 )
 
 
