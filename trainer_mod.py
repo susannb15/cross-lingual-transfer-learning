@@ -775,7 +775,7 @@ class My_Trainer(Trainer):
 				for dataset in self.eval_dataset:
 					metrics = None
 					print(f'Evaluating on {dataset}')
-					metrics = self.evaluate(self.eval_dataset[dataset], ignore_keys=ignore_keys_for_eval)
+					metrics = self.evaluate(self.eval_dataset[dataset], ignore_keys=ignore_keys_for_eval, metric_key_prefix=f"eval-{dataset}")
 					self._report_to_hp_search(trial, epoch, metrics)
 			else:
 				metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
