@@ -31,6 +31,6 @@ tiger_len, tiger_words = avg_sen_len(tiger)
 print(f"Average sentence length of Wikipedia: {wiki_len}")
 print(f"Average sentence length of Tiger: {tiger_len}")
 
-print(f"Most common words in Wikipedia: {wiki_words.most_common(10)}")
-print(f"Most common words in Tiger: {tiger_words.most_common(10)}")
+print(f"Most common words in Wikipedia: {wiki_words.most_common(20)}")
+print(f"Most common words in Tiger: {tiger_words.most_common(20)}")
 
