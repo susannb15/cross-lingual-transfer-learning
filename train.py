@@ -32,8 +32,8 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[:50%]')
-validation = load_dataset("wikipedia", "20220301.de", split='train[50:55%]')
+train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
+validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
 datasets["train"] = train
 datasets["validation1"] = validation
@@ -182,7 +182,7 @@ tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, r
 train_tok = train.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 val_tok = validation.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 """
-block_size=128
+block_size=256
 
 def group_texts(examples):
 	# Concatenate all texts.
@@ -222,7 +222,7 @@ training_args = TrainingArguments(
 	weight_decay=0.01,
 	#num_train_epochs=1.0,
 	max_steps=100000,
-	eval_steps=20,
+	eval_steps=5000,
 	save_steps=5000,
 	warmup_steps = 30000,
 	seed=42

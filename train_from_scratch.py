@@ -32,8 +32,8 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[:95%]')
-val_wiki = load_dataset("wikipedia", "20220301.de", split='train[95:100%]')
+train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
+val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
 datasets["train"] = train
 datasets["validation1"] = val_wiki
