@@ -1,6 +1,6 @@
-Der Lehrer begrüßte
-Der Lehrer der Musikschule begrüßte
-Der Lehrer des Kurses begrüßte
-Die Lehrerin begrüßte
-Die Lehrerin der Musikschule begrüßte
-Die Lehrerin des Kurses begrüßte
+m	Er benannte ihn nach
+m	Er kam zu
+m	In dieser wurde beschrieben, dass er mit
+f	Die Division wurde nach
+f	Als kleiner Junge ging er oft abends in die Bäckerei, die von Lena und
+f	Nachdem sie

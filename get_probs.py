@@ -11,8 +11,11 @@ tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 native_model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
 
 #tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
-de_model = AutoModelForCausalLM.from_pretrained("de_frozen_except_wte/checkpoint-100000")
-es_model = AutoModelForCausalLM.from_pretrained("es_frozen_except_wte/checkpoint-100000")
+de_model = AutoModelForCausalLM.from_pretrained("de_untied_wiki20wtewpe/checkpoint-100000")
+from_scratch_model = AutoModelForCausalLM.from_pretrained("de_from_scratch_adapted_wte_wpe_untied/checkpoint-100000")
+from_scratch_model_wte = AutoModelForCausalLM.from_pretrained("de_from_scratch_adapted_wte_untied/checkpoint-100000")
+from_scratch_model_traindata = AutoModelForCausalLM.from_pretrained("de_from_scratch_adapted_on_train_data/checkpoint-100000")
+from_scratch_model_no_adaptation = AutoModelForCausalLM.from_pretrained("de_from_scratch/checkpoint-230000")
 
 # input 
 # TODO: make this loadable from command line
@@ -60,10 +63,12 @@ def predict(input, word_list):
 	return prob_list
 
 def plot_preds(cons):
-	poss = [" seinen", " seine", " ihren", " ihre"]
-	names = ["native_model", "de_model", "es_model"]
+	poss_m = [" sein", " seinen", " seines", " seinem", " seiner", " seine"]
+	poss_f = [" ihr", " ihren" , " ihres", " ihrem", " ihrer", " ihre"]
+	poss = poss_m + poss_f
+	names = ["native_model", "from_scratch", "from_scratch_adapted_wte+wpe", "from_scratch_adapted_wte", "from_scratch_adaptated_on_train_data", "DE_adapted_wte+wpe"]
 	#names = ["native_model", "de_model"]
-	models = [native_model, de_model, es_model]
+	models = [native_model, from_scratch_model_no_adaptation, from_scratch_model, from_scratch_model_wte, from_scratch_model_traindata, de_model]
 	#models = [native_model, de_model]
 	y_corr = defaultdict(list)
 	y_incorr = defaultdict(list)
@@ -94,14 +99,14 @@ def plot_preds(cons):
 					norm = sum(prob_list)
 					if label == "m":
 						y_probs[name].extend((prob_list[0]+prob_list[1]) / norm) 
-						if best_pred in [" seinen", " seine"]:
+						if best_pred in poss_m:
 							corr += 1
 						else:
 							incorr += 1
 							f.write("INCORRECT PRED AT:\t"+line+"\n")
 					elif label == "f":
 						y_probs[name].extend((prob_list[2]+prob_list[3]) / norm) 
-						if best_pred in [" ihren", " ihre"]:
+						if best_pred in poss_f:
 							corr += 1
 						else:
 							incorr += 1
@@ -137,7 +142,8 @@ def read_file(file):
 		text = f.readlines()
 	return text
 
-plot_preds(["simple", "adv", "genitiv", "nebensatz"])
+#plot_preds(["simple", "adv", "genitiv", "nebensatz"])
+plot_preds(["testsents"])
 
 """
 text = read_file(input)

@@ -86,7 +86,7 @@ elif args.model_lng == "en":
 	print("Not implemented")
 
 elif args.model_lng == "gpt2":
-	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-30000")
+	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-240000")
 	"""
 	config = AutoConfig.from_pretrained(
 	"gpt2",
