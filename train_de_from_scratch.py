@@ -35,8 +35,12 @@ datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
 val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
+news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '../10kGNAD/articles.csv'})
 datasets["train"] = train
 datasets["validation1"] = val_wiki
+datasets["validation3"] = news_corpus["train"]
+
+print(datasets["validation3"])
 
 from datasets import ClassLabel, Value
 import random
@@ -125,7 +129,7 @@ trainer = My_Trainer(
 	model=model,
 	args=training_args,
 	train_dataset=lm_datasets["train"],
-	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"]}
+	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
 )
 
 

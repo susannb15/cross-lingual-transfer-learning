@@ -757,8 +757,6 @@ class My_Trainer(Trainer):
 			logs["learning_rate"] = self._get_learning_rate()
 
 			logs["perplexity"] = math.exp(logs["loss"])
-			print(self._pronoun_counter)
-			logs["PossessivePronouns"] = sum(self._pronoun_counter.values())
 			for n in grad_norms:
 				logs[n] = grad_norms[n]
 
