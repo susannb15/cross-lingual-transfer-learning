@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description="Options")
 
 parser.add_argument('--name', type=str, help='Name of the output dir.')
 #parser.add_argument('--config', type=str, help='Config file.')
-parser.add_argument('--lr', type=float, default=2e-5, help='Learning rate')
+parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('--group', type=str, help='Group parameter for wandb')
 parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
 parser.add_argument('--tied_weights', action='store_true')
@@ -86,7 +86,7 @@ elif args.model_lng == "en":
 	print("Not implemented")
 
 elif args.model_lng == "gpt2":
-	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-240000")
+	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-340000")
 	"""
 	config = AutoConfig.from_pretrained(
 	"gpt2",
@@ -121,14 +121,14 @@ model.transformer.wte.weight = nn.Parameter(shuffled)
 if args.tied_weights:
 	model.tie_weights()
 else:
-	"""
+	
 	# shuffle output embeddings
 	lm_head = model.lm_head.weight
 	idx = torch.randperm(lm_head.shape[0])
 	shuffled = lm_head[idx]
 	model.lm_head.weight = nn.Parameter(shuffled)
-	"""
-	print("Weights are NOT tied and output is NOT shuffled")
+	
+	print("Weights are NOT tied and output is shuffled")
 
 print("TIED EMBEDDINGS?", model.transformer.wte.weight is model.lm_head.weight)	
 
@@ -150,8 +150,8 @@ freeze_model(model)
 
 model.transformer.wte.weight.requires_grad = True
 model.transformer.wpe.weight.requires_grad = True
-#if not args.tied_weights:
-#	model.lm_head.weight.requires_grad = True
+if not args.tied_weights:
+	model.lm_head.weight.requires_grad = True
 
 #model.lm_head.weight.requires_grad = False
 
@@ -207,9 +207,9 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
-
-print("MODEL")
-print(model)
+test_seq = tokenizer.decode(lm_datasets["validation2"]["input_ids"][0])
+#print("MODEL")
+#print(model)
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -225,7 +225,8 @@ training_args = TrainingArguments(
 	eval_steps=5000,
 	save_steps=5000,
 	warmup_steps = 30000,
-	seed=42
+	seed=42,
+	max_length=256
 )
 
 
@@ -235,7 +236,13 @@ trainer = My_Trainer(
 	train_dataset=lm_datasets["train"],
 	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"]}
 )
+"""
+model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-340000")
 
-
+inputs = tokenizer(test_seq, return_tensors="pt")
+labels = lm_datasets["validation2"]["input_ids"][0]
+outputs = model(**inputs, labels=labels)
+print(outputs)
+"""
 trainer.train()
 trainer.evaluate()
