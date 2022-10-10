@@ -32,8 +32,8 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-train = load_dataset("large_spanish_corpus", name="all_wikis", split='train[:70%]')
-validation = load_dataset("large_spanish_corpus", name="all_wikis", split='train[90:95%]')
+train = load_dataset("wikipedia", language="es", date="20221001", split='train[:70%]', beam_runner="DirectRunner")
+validation = load_dataset("wikipedia", language="es", name="20221001", split='train[90:95%]', beam_runner="DirectRunner")
 datasets["train"] = train
 datasets["validation"] = validation
 
@@ -55,6 +55,7 @@ def show_random_elements(dataset, num_examples=10):
 		if isinstance(typ, ClassLabel):
 			df[column] = df[column].transform(lambda i: typ.names[i])
 
+print(show_random_elements(datasets["train"]))
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel
 
@@ -72,7 +73,7 @@ model = GPT2LMHeadModel(config)
 
 
 def tokenize_function(examples):
-	return tokenizer(examples["text"], max_length=256)
+	return tokenizer(examples["text"])
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 
@@ -102,8 +103,6 @@ lm_datasets = tokenized_datasets.map(
 )
 
 
-print("MODEL")
-print(model)
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -119,8 +118,7 @@ training_args = TrainingArguments(
 	eval_steps=15000,
 	save_steps=15000,
 	warmup_steps = 30000,
-	seed=42,
-	max_length=256
+	seed=42
 )
 
 
