@@ -531,7 +531,7 @@ class My_Trainer(Trainer):
 
 			step = -1
 			for step, inputs in enumerate(epoch_iterator):
-
+				print(step, inputs["input_ids"].shape)
 				self._pronouns = np.array(self._tokenizer([" sein", " seine", " seiner", " seinen", " seinem", " seines", " ihr", " ihre", " ihrer", " ihren", " ihrem", " ihres"])["input_ids"]).flat
 				self._count_pronouns(inputs)
 

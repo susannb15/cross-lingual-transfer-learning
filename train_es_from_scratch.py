@@ -13,6 +13,7 @@ import math
 from trainer_mod import My_Trainer
 import wandb
 import random
+import wikipedia
 
 random.seed(42)
 
@@ -32,10 +33,14 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", language="es", date="20221001", split='train[:70%]', beam_runner="DirectRunner")
-validation = load_dataset("wikipedia", language="es", name="20221001", split='train[90:95%]', beam_runner="DirectRunner")
+#train = load_dataset("wikipedia.py", "20220301.es", split='train[:3%]', beam_runner="DirectRunner")
+train = load_dataset("wikipedia.py", "20220301.es", split='train[5:30%]', beam_runner="DirectRunner")
+#validation = load_dataset("wikipedia.py", "20220301.es", split='train[4:5%]', beam_runner="DirectRunner")
+validation = load_dataset("wikipedia.py", "20220301.es", split='train[90:95%]', beam_runner="DirectRunner")
 datasets["train"] = train
 datasets["validation"] = validation
+
+print(train["text"][1])
 
 from datasets import ClassLabel, Value
 import random
@@ -77,6 +82,8 @@ def tokenize_function(examples):
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 
+print(tokenized_datasets["train"]["input_ids"][0])
+
 block_size=256
 
 def group_texts(examples):
@@ -103,7 +110,6 @@ lm_datasets = tokenized_datasets.map(
 )
 
 
-
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
 
@@ -121,6 +127,8 @@ training_args = TrainingArguments(
 	seed=42
 )
 
+print("MODEL")
+print(model)
 
 trainer = My_Trainer(
 	model=model,
