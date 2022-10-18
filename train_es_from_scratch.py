@@ -100,6 +100,10 @@ def group_texts(examples):
 		for k, t in concatenated_examples.items()
 		}
 	result["labels"] = result["input_ids"].copy()
+	#if len(result["input_ids"]) != 256:
+	#	pass
+	#else:
+	#	return result
 	return result
 
 lm_datasets = tokenized_datasets.map(
@@ -109,6 +113,32 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
+BAD_counter = 0
+GOOD_counter = 0
+indeces_train = []
+indeces_val = []
+for i, example in enumerate(lm_datasets["train"]["input_ids"]):
+	if len(example) != 256:
+		indeces_train.append(i)
+
+for i, example in enumerate(lm_datasets["validation"]["input_ids"]):
+        if len(example) != 256:
+                indeces_val.append(i)
+
+
+lm_datasets["train"] = lm_datasets["train"].select((i for i in range(len(lm_datasets["train"])) if i not in set(indeces_train)))
+lm_datasets["validation"] = lm_datasets["validation"].select((i for i in range(len(lm_datasets["validation"])) if i not in set(indeces_val)))
+
+for i, example in enumerate(lm_datasets["train"]["input_ids"]):
+        if len(example) == 256:
+                GOOD_counter += 1
+        else:
+                BAD_counter += 1
+                print(i, len(example))
+
+
+print(f"BAD!!!! {BAD_counter}")
+print(f"GOOD!!! {GOOD_counter}")
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *

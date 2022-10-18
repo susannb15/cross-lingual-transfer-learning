@@ -35,8 +35,10 @@ datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
+news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '../10kGNAD/articles.csv'})
 datasets["train"] = train
 datasets["validation1"] = validation
+datasets["validation3"] = news_corpus["train"]
 
 
 from datasets import ClassLabel, Value
@@ -62,7 +64,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHea
 
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 
-if args.model_lng == "es":
+if args.model_lng == "es_pretrained":
 	model = AutoModelForCausalLM.from_pretrained("datificate/gpt2-small-spanish")
 	embeddings = model.transformer.wte.weight
 	perm = torch.randperm(embeddings.shape[0])
@@ -79,13 +81,30 @@ if args.model_lng == "es":
 		extended_head = torch.cat((lm_head, copies), 0)
 		model.lm_head.weight = nn.Parameter(extended_head)
 
-elif args.model_lng == "de":
+elif args.model_lng == "es_from_scratch":
+	model = AutoModelForCausalLM.from_pretrained("es_from_scratch/checkpoint-45000")
+	embeddings = model.transformer.wte.weight
+	perm = torch.randperm(embeddings.shape[0])
+	copy_idx = perm[:8]
+	copies = embeddings[copy_idx]
+	extended_emb = torch.cat((embeddings, copies), 0)
+	model.transformer.wte.weight = nn.Parameter(extended_emb)
+
+	if not args.tied_weights:
+		lm_head = model.lm_head.weight
+		perm = torch.randperm(lm_head.shape[0])
+		copy_idx = perm[:8]
+		copies = lm_head[copy_idx]
+		extended_head = torch.cat((lm_head, copies), 0)
+		model.lm_head.weight = nn.Parameter(extended_head)
+
+elif args.model_lng == "de_pretrained":
 	model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
 
 elif args.model_lng == "en":
 	print("Not implemented")
 
-elif args.model_lng == "gpt2":
+elif args.model_lng == "de_from_scratch":
 	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-340000")
 	"""
 	config = AutoConfig.from_pretrained(
@@ -207,7 +226,7 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
-test_seq = tokenizer.decode(lm_datasets["validation2"]["input_ids"][0])
+#test_seq = tokenizer.decode(lm_datasets["validation2"]["input_ids"][0])
 #print("MODEL")
 #print(model)
 
@@ -234,7 +253,7 @@ trainer = My_Trainer(
 	model=model,
 	args=training_args,
 	train_dataset=lm_datasets["train"],
-	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"]}
+	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
 )
 """
 model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-340000")
