@@ -35,7 +35,7 @@ datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
-news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '../10kGNAD/articles.csv'})
+news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
 datasets["train"] = train
 datasets["validation1"] = validation
 datasets["validation3"] = news_corpus["train"]
