@@ -244,8 +244,7 @@ training_args = TrainingArguments(
 	eval_steps=5000,
 	save_steps=5000,
 	warmup_steps = 30000,
-	seed=42,
-	max_length=256
+	seed=42
 )
 
 
