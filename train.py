@@ -101,11 +101,25 @@ elif args.model_lng == "es_from_scratch":
 elif args.model_lng == "de_pretrained":
 	model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
 
-elif args.model_lng == "en":
-	print("Not implemented")
+elif args.model_lng == "en_from_scratch":
+	model = AutoModelWithLMHead.from_pretrained("en_from_scratch/checkpoint-45000")
+	embeddings = model.transformer.wte.weight
+	perm = torch.randperm(embeddings.shape[0])
+	copy_idx = perm[:8]
+	copies = embeddings[copy_idx]
+	extended_emb = torch.cat((embeddings, copies), 0)
+	model.transformer.wte.weight = nn.Parameter(extended_emb)
+
+	if not args.tied_weights:
+		lm_head = model.lm_head.weight
+		perm = torch.randperm(lm_head.shape[0])
+		copy_idx = perm[:8]
+		copies = lm_head[copy_idx]
+		extended_head = torch.cat((lm_head, copies), 0)
+		model.lm_head.weight = nn.Parameter(extended_head)
 
 elif args.model_lng == "de_from_scratch":
-	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-340000")
+	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
 	"""
 	config = AutoConfig.from_pretrained(
 	"gpt2",
