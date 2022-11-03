@@ -67,9 +67,9 @@ def plot_preds(cons):
 	poss_m = [" sein", " seinen", " seines", " seinem", " seiner", " seine"]
 	poss_f = [" ihr", " ihren" , " ihres", " ihrem", " ihrer", " ihre"]
 	poss = poss_m + poss_f
-	names = ["native_model", "de_model", "es_model", "en_model"]
+	names = ["pretrained", "from scratch", "de", "es", "en"]
 	#names = ["native_model", "de_model"]
-	models = [native_model, de_model, es_model, en_model]
+	models = [pretrained_model, from_scratch_model, de_model, es_model, en_model]
 	#models = [native_model, de_model]
 	y_corr = defaultdict(list)
 	y_incorr = defaultdict(list)
