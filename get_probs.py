@@ -8,14 +8,15 @@ from collections import defaultdict
 
 # load tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
-native_model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
+
+
+pretrained_model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
+from_scratch_model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
 
 #tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
-de_model = AutoModelForCausalLM.from_pretrained("de_untied_wiki20wtewpe/checkpoint-100000")
-from_scratch_model = AutoModelForCausalLM.from_pretrained("de_from_scratch_adapted_wte_wpe_untied/checkpoint-100000")
-from_scratch_model_wte = AutoModelForCausalLM.from_pretrained("de_from_scratch_adapted_wte_untied/checkpoint-100000")
-from_scratch_model_traindata = AutoModelForCausalLM.from_pretrained("de_from_scratch_adapted_on_train_data/checkpoint-100000")
-from_scratch_model_no_adaptation = AutoModelForCausalLM.from_pretrained("de_from_scratch/checkpoint-230000")
+de_model = AutoModelForCausalLM.from_pretrained("de_tied/checkpoint-60000")
+es_model =AutoModelForCausalLM.from_pretrained("es_tied/checkpoint-60000")
+en_model = AutoModelForCausalLM.from_pretrained("en_tied/checkpoint-60000")
 
 # input 
 # TODO: make this loadable from command line
@@ -66,9 +67,9 @@ def plot_preds(cons):
 	poss_m = [" sein", " seinen", " seines", " seinem", " seiner", " seine"]
 	poss_f = [" ihr", " ihren" , " ihres", " ihrem", " ihrer", " ihre"]
 	poss = poss_m + poss_f
-	names = ["native_model", "from_scratch", "from_scratch_adapted_wte+wpe", "from_scratch_adapted_wte", "from_scratch_adaptated_on_train_data", "DE_adapted_wte+wpe"]
+	names = ["native_model", "de_model", "es_model", "en_model"]
 	#names = ["native_model", "de_model"]
-	models = [native_model, from_scratch_model_no_adaptation, from_scratch_model, from_scratch_model_wte, from_scratch_model_traindata, de_model]
+	models = [native_model, de_model, es_model, en_model]
 	#models = [native_model, de_model]
 	y_corr = defaultdict(list)
 	y_incorr = defaultdict(list)
