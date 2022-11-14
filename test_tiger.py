@@ -24,39 +24,39 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHea
 
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 
-native_model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
+pretrained_model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
+from_scratch_model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
 de_model = AutoModelWithLMHead.from_pretrained("de_tied/checkpoint-60000")
 en_model = AutoModelWithLMHead.from_pretrained("en_tied/checkpoint-60000")
 es_model = AutoModelWithLMHead.from_pretrained("es_tied/checkpoint-60000")
 
-models = [("native", native_model),("de", de_model),("en", en_model),("es", es_model)]
+models = [("pretrained", pretrained_model),("from scratch", from_scratch_model), ("de", de_model),("en", en_model),("es", es_model)]
 
 import math
 from tqdm import tqdm
 
-ppls = dict()
+files = ["wiki_logits.txt", "tiger_logits.txt"]
 
-with open("tiger_for_testing.txt", "r", encoding='ISO-8859-1') as f:
-	text = f.readlines()
-	#text = text[:1]
-	for name, model in models:
-		ppl_total = 0
-		for line in (text): 
-			#print(line)
-			with torch.no_grad():
-				tokenized = tokenizer(line, return_tensors="pt")
-				outputs = model(**tokenized, labels=tokenized["input_ids"])
-				loss = outputs.loss
-				logits = outputs.logits
-				next_token_logits = logits[:, -1, :]
-				probs = softmax(next_token_logits)
-				best_pred = np.argmax(probs[0])
-				print("PREDICTION", name)
-				print(tokenizer.decode(best_pred))
-				ppl_total += math.exp(loss)
-		ppls[name] = ppl_total / len(text)
-"""
-with open("ppls.txt", "w+") as f:
-	for key in ppls:
-		f.write("AVG PPL of "+str(key)+": "+str(ppls[key])+"\n")
-"""
+with open("prediction_analysis.txt", "w+") as g:
+	for fi in files:
+		g.write("---------\n"+str(fi)+"\n\n")
+		with open(fi, "r") as f:
+			text = f.readlines()
+			for name, model in models:
+				g.write(f"MODEL: {name}\n")
+				for line in (text): 
+					g.write(line+"\n-------\n")
+					with torch.no_grad():
+						tokenized = tokenizer(line, return_tensors="pt")
+						outputs = model(**tokenized, labels=tokenized["input_ids"])
+						loss = outputs.loss
+						logits = outputs.logits
+						next_token_logits = logits[:, -1, :]
+						probs = softmax(next_token_logits)[0]
+						#best_pred = np.argmax(probs[0])
+						preds = []
+						for word_id in range(next_token_logits.size(dim=1)):
+							pred_word = tokenizer.decode(word_id)
+							preds.append((pred_word, probs[word_id]))
+						preds_sorted = sorted(preds, key=lambda x: x[1], reverse=True)
+					g.write(str(preds_sorted[:10])+"\n"+"-------------------------------"+"\n")
