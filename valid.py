@@ -22,12 +22,15 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHea
 
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 
+pretrained = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
 native_model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
 de_model = AutoModelWithLMHead.from_pretrained("de_tied/checkpoint-60000")
 en_model = AutoModelWithLMHead.from_pretrained("en_tied/checkpoint-60000")
 es_model = AutoModelWithLMHead.from_pretrained("es_tied/checkpoint-60000")
 
-models = [("native", native_model),("de", de_model),("en", en_model),("es", es_model)]
+models = [("pretrained", pretrained), ("native", native_model),("de", de_model),("en", en_model),("es", es_model)]
+
+#models = [("pretrained", pretrained)]
 
 import math
 from tqdm import tqdm
@@ -36,7 +39,7 @@ ppls = dict()
 ppls["wikipedia"] = dict()
 ppls["tiger"] = dict()
 ppls["10kGNAD"] = dict()
-
+#ppls["test"] = dict() 
 # create Wikipedia sentences
 
 wikipedia = []
@@ -59,23 +62,34 @@ news = news[:50000]
 with open("tiger.txt", "r", encoding='ISO-8859-1') as f:
 	tiger = f.readlines()
 
+# for testing
+#with open("xx.txt", "r") as f:
+#	test = f.readlines()
+
 def clean(dataset):
 	clean_dataset = []
 	for sent in dataset:
-        	if sent and len(sent) <= 256:
-                	clean_dataset.append(sent)
+		sent = sent.strip()
+		if sent and len(sent) <= 256:
+			clean_dataset.append(sent)
 	return clean_dataset
 # for testing
-#wikipedia = wikipedia[:100]
-#tiger = tiger[:100]
-#news = news[:100]
+#wikipedia = wikipedia[:1000]
+#tiger = tiger[:1000]
+#news = news[:1000]
 
 valid = [("wikipedia", wikipedia), ("tiger", tiger), ("10kGNAD", news)]
+
+#valid = [("test", test)]
+
+problem_sents = []
+other_problem_sents = []
 
 for d, data in valid:
 	dataset = clean(data)
 	for name, model in models:
 		ppl_total = 0
+		dataset_len = len(dataset)
 		for line in tqdm(dataset):
 			with torch.no_grad():
 				tokenized = tokenizer(line, return_tensors='pt')
@@ -84,7 +98,23 @@ for d, data in valid:
 				ppl = math.exp(loss)
 				if not math.isnan(ppl):
 					ppl_total += math.exp(loss)
+				else:
+					problem_sents.append(line)
+					dataset_len -= 1
+				if ppl >= 10000:
+					other_problem_sents.append(line)
 		ppls[d][name] = ppl_total / len(dataset)
+
+with open("problem_sents.txt", "w+") as f:
+	for sent in problem_sents:
+		f.write(sent)
+		f.write("\n")
+	f.write("\n\n")
+	f.write("HIGH PPL\n\n")
+	for sent in other_problem_sents:
+		f.write(sent)
+		f.write("\n")
+
 
 with open("valid.txt", "w+") as f:
 	for key in ppls:
