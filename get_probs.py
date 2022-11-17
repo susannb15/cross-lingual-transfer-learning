@@ -99,14 +99,14 @@ def plot_preds(cons):
 					best_pred = poss[np.argmax(prob_list)]
 					norm = sum(prob_list)
 					if label == "m":
-						y_probs[name].extend((prob_list[0]+prob_list[1]) / norm) 
+						y_probs[name].extend((sum(prob_list[:5])) / norm) 
 						if best_pred in poss_m:
 							corr += 1
 						else:
 							incorr += 1
 							f.write("INCORRECT PRED AT:\t"+line+"\n")
 					elif label == "f":
-						y_probs[name].extend((prob_list[2]+prob_list[3]) / norm) 
+						y_probs[name].extend((sum(prob_list[5:])) / norm) 
 						if best_pred in poss_f:
 							corr += 1
 						else:
