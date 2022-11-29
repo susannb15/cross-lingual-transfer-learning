@@ -44,27 +44,24 @@ def read_file(file_name):
 content = read_file(args.data)
 
 for sentence in content:
-	ppls = []
 	words = sentence.split()
 	with torch.no_grad():
 		tokenized = tokenizer(sentence, return_tensors='pt')
-		print("TOKENIZED", tokenized["input_ids"].shape)
-		words = tokenizer.decode(tokenizer(sentence)["input_ids"])
 		labels = tokenized["input_ids"]
+		#print("LABELS", labels)
 		outputs = model(**tokenized, labels=labels)
 		logits = outputs.get("logits")
-		print("LOGITS", logits.shape)
 		shift_logits = logits[..., :-1, :].contiguous()
 		shift_labels = labels[..., 1:].contiguous()
 		loss_fct = nn.CrossEntropyLoss(reduction="none")
 		loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
-		print("LOSS", loss.shape)
-	for lo in loss:
-		ppl = math.exp(lo)
-		ppls.append(ppl)
-	print("PPL", len(ppls))
-	words = words.split() 
-	print(words)
+		#print("SHIFT", shift_labels.view(-1))
+	ppls = [math.exp(l) for l in loss] 
+	#print("LOSS", len(loss))
+	token_list = tokenized["input_ids"].flatten().tolist()
+	words = [tokenizer.decode(word) for word in token_list]
+	del words[0]
+	#print("WORDS", words)
 	plt.plot(words, ppls)
 	plt.title(f"PPL per word for: {sentence}")
 	plt.show()
