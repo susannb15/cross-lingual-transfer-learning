@@ -13,7 +13,7 @@ from scipy.special import softmax
 
 random.seed(42)
 
-datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'train': 'tiger.txt'})
+#datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'train': 'tiger.txt'})
 
 from datasets import ClassLabel, Value
 import random
@@ -37,6 +37,23 @@ from tqdm import tqdm
 
 files = ["wiki_logits.txt", "tiger_logits.txt"]
 
+with open("tiger_ISO.txt", "r", encoding='ISO-8859-1') as f:
+	iso = f.readlines()
+
+with open("tiger_UTF-8.txt", "r") as f:
+	utf = f.readlines()
+
+
+sent1 = iso[0]
+sent2 = utf[0]
+
+print(sent1)
+print(tokenizer.encode(sent1))
+print(sent2)
+print(tokenizer.encode(sent2))
+
+
+"""
 with open("prediction_analysis.txt", "w+") as g:
 	for fi in files:
 		g.write("---------\n"+str(fi)+"\n\n")
@@ -60,3 +77,4 @@ with open("prediction_analysis.txt", "w+") as g:
 							preds.append((pred_word, probs[word_id]))
 						preds_sorted = sorted(preds, key=lambda x: x[1], reverse=True)
 					g.write(str(preds_sorted[:10])+"\n"+"-------------------------------"+"\n")
+"""

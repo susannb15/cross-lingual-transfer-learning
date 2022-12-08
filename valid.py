@@ -48,7 +48,7 @@ for article in tqdm(datasets["text"]):
 	sents = article.split(".")
 	wikipedia.extend(sents)
 
-wikipedia = wikipedia[:50000]
+wikipedia = wikipedia[:10000]
 
 news = []
  
@@ -57,10 +57,12 @@ for article in tqdm(df["text"]):
 	sents = article.split(".")
 	news.extend(sents)
 
-news = news[:50000]
+news = news[:10000]
 
 with open("tiger.txt", "r", encoding='ISO-8859-1') as f:
 	tiger = f.readlines()
+
+tiger = tiger [:10000]
 
 # for testing
 #with open("xx.txt", "r") as f:
@@ -69,7 +71,7 @@ with open("tiger.txt", "r", encoding='ISO-8859-1') as f:
 def clean(dataset):
 	clean_dataset = []
 	for sent in dataset:
-		sent = sent.strip()
+		sent = sent.lstrip()
 		if sent and len(sent) <= 256:
 			clean_dataset.append(sent)
 	return clean_dataset
