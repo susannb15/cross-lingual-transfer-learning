@@ -14,10 +14,9 @@ from trainer_mod import My_Trainer
 
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[:3%]')
-validation = load_dataset("wikipedia", "20220301.de", split='train[50:55%]')
-datasets["train"] = train
-datasets["validation"] = validation
+#train = load_dataset("wikipedia", "20220301.de", split='train[:3%]')
+datasets = load_dataset("text", encoding='utf-8', data_files={'validation': 'tiger_UTF-8.txt'})
+#datasets["train"] = train
 
 from datasets import ClassLabel, Value
 import random
@@ -41,7 +40,7 @@ def show_random_elements(dataset, num_examples=10):
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead
 
-model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-30000")
+model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 #print("EMB SHAPE")
 #print(de_emb_shuffled.shape)
@@ -57,7 +56,7 @@ def tokenize_function(examples):
 	return tokenizer(examples["text"])
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
-block_size=128
+block_size=256
 
 def group_texts(examples):
     # Concatenate all texts.
@@ -100,7 +99,7 @@ training_args = TrainingArguments(
 trainer = My_Trainer(
     model=model,
     args=training_args,
-    train_dataset=lm_datasets["train"],
+    #train_dataset=lm_datasets["train"],
     eval_dataset=lm_datasets["validation"],
 )
 

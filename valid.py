@@ -9,8 +9,11 @@ import math
 from trainer_mod import My_Trainer
 import wandb
 import random
+import spacy
 
 random.seed(42)
+
+nlp = spacy.load("de_core_news_sm")
 
 datasets = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 
@@ -45,21 +48,24 @@ ppls["10kGNAD"] = dict()
 wikipedia = []
 
 for article in tqdm(datasets["text"]):
-	sents = article.split(".")
-	wikipedia.extend(sents)
+	sents = nlp(article)
+	assert sents.has_annotation("SENT_START")
+	wikipedia.extend(sents.sents)
 
 wikipedia = wikipedia[:10000]
+print(wikipedia[:3])
 
 news = []
  
 df = pd.read_csv("10kGNAD/articles.csv", delimiter="\t")
 for article in tqdm(df["text"]):
-	sents = article.split(".")
-	news.extend(sents)
+	sents = nlp(article)
+	assert sents.has_annotation("SENT_START")
+	news.extend(sents.sents)
 
 news = news[:10000]
 
-with open("tiger.txt", "r", encoding='ISO-8859-1') as f:
+with open("tiger_UTF-8.txt", "r", encoding='ISO-8859-1') as f:
 	tiger = f.readlines()
 
 tiger = tiger [:10000]
