@@ -31,6 +31,14 @@ def get_chpt(model_type, chpt):
 	print(f"Evaluating model type {model_type} on checkpoint {chpt}")
 	return AutoModelForCausalLM.from_pretrained(model_type+"/checkpoint-"+str(chpt))
 
+# autolabel
+
+def autolabel(rs):
+	for rect in rs:
+		h = rect.get_height()
+		ax.text(rect.get_x()+rect.get_width()/2., 1.05*h, '%d'%int(h), ha='center', va='bottom')
+
+
 # eval on testsents function
 
 def eval_on_testsents(model, test_file):
@@ -74,10 +82,17 @@ def eval_on_checkpoints(model_type):
 		datapoints.append(corr_chpt_x)
 	return datapoints
 
+# get ppl of checkpoints
+
+def get_ppl_on_checkpoints(model_type):
+	datapoints = []
+	for chpt in checkpoints:
+		model = get_chpt(model_type, chpt)	
+
 # plot function; plots all checkpoints of x models into one graph
 # bar plots for each checkpoints in diff colors depending on model type
 
-def plot_checkpoints():
+def plot_testsents():
 	n_groups = len(args.models)
 	index = np.arange(n_groups)
 	rects = []
@@ -91,7 +106,8 @@ def plot_checkpoints():
 
 	for model_type in args.models:
 		datapoints = eval_on_checkpoints(model_type)
-		rects.append(ax.bar(index+width, datapoints, width, color=colors.pop()))
+		color = colors.pop()
+		rects.append(ax.bar(index+width, datapoints, width=0.27, color=color))
 		width += 0.27
 
 	ax.set_ylabel('Percentage of correct genus prediction')
@@ -99,13 +115,38 @@ def plot_checkpoints():
 	ax.set_xticklabels(checkpoints)
 	ax.legend(tuple([rec[0] for rec in rects]), (tuple(args.models)))
 	
-	def autolabel(rs):
-		for rect in rs:
-			h = rect.get_height()
-			ax.text(rect.get_x()+rect.get_width()/2., 1.05*h, '%d'%int(h), ha='center', va='bottom')
 	for rect in rects:
 		autolabel(rect)
 
 	plt.show()
 
-plot_checkpoints()
+def plot_ppl():
+	n_groups = len(args.models)
+	index = np.arange(n_groups)
+	rects = []
+	width = 0
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+
+	colors = ['r', 'g', 'b']
+	colors = colors[:n_groups]
+
+	for model_type in args.models:
+		datapoints = get_ppl_on_checkpoints(model_type)
+		color = colors.pop()
+		rects.append(ax.bar(index+width, datapoints, width=0.27, color=color))
+		width += 0.27
+
+	ax.set_ylabel('PPL on wikipedia testset')
+	ax.set_xticks(index+0.27)
+	ax.set_xticklabels(checkpoints)
+	ax.legend(tuple([rec[0] for rec in rects]), (tuple(args.models)))
+
+	for rect in rects:
+		autolabel(rect)
+
+	plt.show()
+
+plot_testsents()
+#plot_ppl()
