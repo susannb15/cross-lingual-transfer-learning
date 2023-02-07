@@ -13,6 +13,7 @@ import math
 from trainer_mod import My_Trainer
 import wandb
 import random
+import numpy as np
 
 random.seed(42)
 
@@ -162,17 +163,14 @@ def gauss(embeddings):
 	mean = 0 
 	std = args.noise_intensity # intensity has to be defined in the args
 	noise = np.random.normal(mean, std, size=(embeddings.shape))
-	print("Noise Shape", noise.shape)
-	print("Noise", noise)
-	gauss_embeddings = embeddings + noise 
-	print("Embeddings before:\n", embeddings)
-	print("Embeddings after:\n", gauss_embeddings)
-	return gauss_embeddings
+	gauss_embeddings = embeddings.detach().numpy() + noise 
+	return torch.from_numpy(gauss_embeddings).float()
 
 #shuffled_embeddings = shuffle(model.transformer.wte.weight)
 #model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
 gauss_embeddings = gauss(model.transformer.wte.weight)
 model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
+print(f"Embeddings are noisy with intensity (STD) = {args.noise_intensity}")
 
 if args.tied_weights:
 	model.tie_weights()
@@ -263,9 +261,6 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
-#test_seq = tokenizer.decode(lm_datasets["validation2"]["input_ids"][0])
-#print("MODEL")
-#print(model)
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -299,5 +294,6 @@ labels = lm_datasets["validation2"]["input_ids"][0]
 outputs = model(**inputs, labels=labels)
 print(outputs)
 """
-#trainer.train()
-#trainer.evaluate()
+
+trainer.train()
+trainer.evaluate()
