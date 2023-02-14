@@ -45,30 +45,34 @@ ppls["10kGNAD"] = dict()
 #ppls["test"] = dict() 
 # create Wikipedia sentences
 
+def create_text(text, data):
+	sents = nlp(text)
+	assert sents.has_annotation("SENT_START")
+	data.extend(sents.sents)
+
 wikipedia = []
 
 for article in tqdm(datasets["text"]):
-	sents = nlp(article)
-	assert sents.has_annotation("SENT_START")
-	wikipedia.extend(sents.sents)
+	for i in range(3):
+		create_text(article, wikipedia)
+	break
 
-wikipedia = wikipedia[:10000]
-print(wikipedia[:3])
+#wikipedia = wikipedia[:10000]
 
 news = []
  
 df = pd.read_csv("10kGNAD/articles.csv", delimiter="\t")
 for article in tqdm(df["text"]):
-	sents = nlp(article)
-	assert sents.has_annotation("SENT_START")
-	news.extend(sents.sents)
+	for i in range(3):
+		create_text(article, news)
+	break
 
-news = news[:10000]
+#news = news[:10000]
 
 with open("tiger_UTF-8.txt", "r", encoding='ISO-8859-1') as f:
 	tiger = f.readlines()
 
-tiger = tiger [:10000]
+tiger = tiger [:10]
 
 # for testing
 #with open("xx.txt", "r") as f:
@@ -94,7 +98,8 @@ problem_sents = []
 other_problem_sents = []
 
 for d, data in valid:
-	dataset = clean(data)
+	#dataset = clean(data)
+	dataset = data
 	for name, model in models:
 		ppl_total = 0
 		dataset_len = len(dataset)

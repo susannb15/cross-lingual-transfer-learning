@@ -99,6 +99,9 @@ elif args.model_lng == "en":
 
 elif args.model_lng == "de":
 	model = AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
+	embeddings = model.transformer.wte.weight
+	embeddings_shortened = embeddings[:50257,:]
+	model.transformer.wte.weight = nn.Parameter(embeddings_shortened)
 	"""
 	config = AutoConfig.from_pretrained(
 	"gpt2",
@@ -282,5 +285,8 @@ labels = lm_datasets["validation2"]["input_ids"][0]
 outputs = model(**inputs, labels=labels)
 print(outputs)
 """
+
+#print(model.transformer.wte.weight.shape)
+
 trainer.train()
 trainer.evaluate()

@@ -105,7 +105,7 @@ def plot_testsents():
 	rects = []
 	width = 0
 
-	fig = plt.figure()
+	fig = plt.figure(figsize=(8,6), dpi=80)
 	ax = fig.add_subplot(111)
 
 	colors = ['r', 'g', 'b']
@@ -141,7 +141,7 @@ def plot_ppl():
 	datasets["tiger"]["rects"] = list()
 	datasets["10kGNAD"]["rects"] = list()
 
-	fig = plt.figure()
+	fig = plt.figure(figsize=(12,10), dpi=100)
 	ax_wiki = fig.add_subplot(221)
 	ax_tiger = fig.add_subplot(222)
 	ax_10kGNAD = fig.add_subplot(223)

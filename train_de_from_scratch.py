@@ -5,6 +5,8 @@ import os
 import transformers
 from datasets import load_dataset
 from datasets import DatasetDict
+from datasets import Dataset
+from datasets import concatenate_datasets
 from itertools import chain
 import torch
 import torch.nn as nn
@@ -13,6 +15,9 @@ import math
 from trainer_mod import My_Trainer
 import wandb
 import random
+import pandas as pd
+import csv
+import math
 
 random.seed(42)
 
@@ -31,16 +36,35 @@ args = parser.parse_args()
 
 wandb.init(group=args.group)
 
+tiger = pd.read_csv("tiger_UTF-8.txt", sep="\t", quoting=csv.QUOTE_NONE, encoding='utf-8', names=["text"])
+news_corpus = pd.read_csv("10kGNAD/articles.csv", sep="\t")
+europarl = pd.read_csv("europarl.txt", sep="\t", names=["text"])
+
+corpora = pd.concat([tiger[:math.ceil(len(tiger)*0.9)], news_corpus["text"][:math.ceil(len(news_corpus)*0.9)], europarl[:math.ceil(len(europarl)*0.9)]])
+corpora = corpora.dropna()
+
+len_all = len(tiger)+len(news_corpus)+len(europarl)
+
 datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
 val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
-datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
-news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
-datasets["train"] = train
-datasets["validation1"] = val_wiki
-datasets["validation3"] = news_corpus["train"]
+#tiger = load_dataset("text", data_files={'train': 'tiger_UTF-8.txt'})
+#news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
+#europarl = load_dataset("text", data_files={'train': 'europarl.txt'}
+#d["train"] = concatenate_datasets([tiger, news_corpus, europarl], split='train[:95%]')
+#datasets["train"]= concatenate_datasets(d["train"], train)
+#datasets["validation1"] = val_wiki
+#datasets["validation2"] = load_dataset(tiger
+#datasets["validation3"] = load_dataset
 
-print(datasets["validation3"])
+dataset = Dataset.from_pandas(corpora)
+datasets["train"] = concatenate_datasets([dataset, train])
+datasets["validation1"] = val_wiki
+datasets["validation2"] = Dataset.from_pandas(tiger[math.ceil(len(tiger)*0.9):])
+datasets["validation3"] = Dataset.from_pandas(news_corpus[math.ceil(len(news_corpus)*0.9):])
+datasets["validation4"] = Dataset.from_pandas(europarl[math.ceil(len(europarl)*0.9):])
+
+datasets["train"].shuffle()
 
 from datasets import ClassLabel, Value
 import random
@@ -129,7 +153,7 @@ trainer = My_Trainer(
 	model=model,
 	args=training_args,
 	train_dataset=lm_datasets["train"],
-	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
+	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
 )
 
 
