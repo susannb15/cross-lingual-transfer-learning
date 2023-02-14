@@ -13,6 +13,7 @@ import math
 from trainer_mod import My_Trainer
 import wandb
 import random
+import numpy as np
 
 random.seed(42)
 
@@ -26,6 +27,7 @@ parser.add_argument('--model_lng', type=str, help="Model language. Options: de, 
 parser.add_argument('--tied_weights', action='store_true')
 parser.add_argument('--no-tied_weights', dest='tied_weights', action='store_false')
 parser.set_defaults(tied_weights=True)
+parser.add_argument('--noise_intensity', type=float, default=0.1, help='Standard deviation for the generation of a normal distribution with mean 0. The generated distribution is added to the embeddings to generate noisy embeddings.')
 
 args = parser.parse_args()
 
@@ -34,7 +36,7 @@ wandb.init(group=args.group)
 datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
-datasets = load_dataset("text", encoding='ISO-8859-1', data_files={'validation2': 'tiger.txt'})
+datasets = load_dataset("text", data_files={'validation2': 'tiger_UTF-8.txt'})
 news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
 datasets["train"] = train
 datasets["validation1"] = validation
@@ -145,11 +147,30 @@ model.transformer.wte.weight = nn.Parameter(shuffled_partly)
 print(embeddings.shape == model.transformer.wte.weight.shape)
 
 """
-# shuffle WTE
-embeddings = model.transformer.wte.weight 
-idx = torch.randperm(embeddings.shape[0])
-shuffled = embeddings[idx]
-model.transformer.wte.weight = nn.Parameter(shuffled)
+
+def shuffle(embeddings):
+	"""
+	Shuffles the embedding matrix.
+	"""
+	idx = torch.randperm(embeddings.shape[0])
+	shuffled = embeddings[idx]
+	return shuffled
+
+def gauss(embeddings):
+	"""
+	Returns an embedding matrix with gaussian noise.
+	"""
+	mean = 0 
+	std = args.noise_intensity # intensity has to be defined in the args
+	noise = np.random.normal(mean, std, size=(embeddings.shape))
+	gauss_embeddings = embeddings.detach().numpy() + noise 
+	return torch.from_numpy(gauss_embeddings).float()
+
+#shuffled_embeddings = shuffle(model.transformer.wte.weight)
+#model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
+gauss_embeddings = gauss(model.transformer.wte.weight)
+model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
+print(f"Embeddings are noisy with intensity (STD) = {args.noise_intensity}")
 
 if args.tied_weights:
 	model.tie_weights()
@@ -240,9 +261,6 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
-#test_seq = tokenizer.decode(lm_datasets["validation2"]["input_ids"][0])
-#print("MODEL")
-#print(model)
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -276,5 +294,6 @@ labels = lm_datasets["validation2"]["input_ids"][0]
 outputs = model(**inputs, labels=labels)
 print(outputs)
 """
+
 trainer.train()
 trainer.evaluate()
