@@ -41,7 +41,9 @@ news_corpus = pd.read_csv("10kGNAD/articles.csv", sep="\t")
 europarl = pd.read_csv("europarl.txt", sep="\t", names=["text"])
 
 corpora = pd.concat([tiger[:math.ceil(len(tiger)*0.9)], news_corpus["text"][:math.ceil(len(news_corpus)*0.9)], europarl[:math.ceil(len(europarl)*0.9)]])
-corpora = corpora.dropna()
+
+corpora.drop(corpora.columns[1], axis=1, inplace=True)
+corpora.dropna()
 
 len_all = len(tiger)+len(news_corpus)+len(europarl)
 
@@ -58,6 +60,8 @@ val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 #datasets["validation3"] = load_dataset
 
 dataset = Dataset.from_pandas(corpora)
+
+
 datasets["train"] = concatenate_datasets([dataset, train])
 datasets["validation1"] = val_wiki
 datasets["validation2"] = Dataset.from_pandas(tiger[math.ceil(len(tiger)*0.9):])
@@ -65,6 +69,8 @@ datasets["validation3"] = Dataset.from_pandas(news_corpus[math.ceil(len(news_cor
 datasets["validation4"] = Dataset.from_pandas(europarl[math.ceil(len(europarl)*0.9):])
 
 datasets["train"].shuffle()
+
+print(len(datasets["train"]["text"]))
 
 from datasets import ClassLabel, Value
 import random
