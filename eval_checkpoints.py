@@ -112,6 +112,7 @@ def plot_testsents():
 
 	for model_type in args.models:
 		datapoints = eval_on_checkpoints(model_type)
+		print(f"Model {model_type} has reaches max performance of {max(datapoints)} at {datapoints.index(max(datapoints))}.")
 		color = colors.pop()
 		#rects.append(ax.bar(index+width, datapoints, width=0.27, color=color))
 		ax.plot(index, datapoints, color=color)
