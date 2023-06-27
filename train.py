@@ -26,6 +26,7 @@ parser.add_argument('--group', type=str, help='Group parameter for wandb')
 parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
 parser.add_argument('--tied_weights', action='store_true')
 parser.add_argument('--no-tied_weights', dest='tied_weights', action='store_false')
+parser.add_argument('--shuffle_perc', type=float, help='Shuffle only X% of the embeddings')
 parser.set_defaults(tied_weights=True)
 parser.add_argument('--noise_intensity', type=float, default=0.1, help='Standard deviation for the generation of a normal distribution with mean 0. The generated distribution is added to the embeddings to generate noisy embeddings.')
 
@@ -147,6 +148,21 @@ model.transformer.wte.weight = nn.Parameter(shuffled_partly)
 print(embeddings.shape == model.transformer.wte.weight.shape)
 
 """
+def shuffle_part(weights, perc):
+	array = np.arange(weights.shape[0])
+	idx_dict = dict()
+	num_samples = int(perc * len(array))
+	shuffle_indeces = random.sample(array.tolist(), num_samples)
+	shuffled = random.sample(shuffle_indeces, len(shuffle_indeces))
+	for idx, idy in zip(shuffle_indeces, shuffled):
+		idx_dict[idx] = idy
+	array_new = []
+	for el in array:
+		if el in idx_dict:
+			array_new.append(idx_dict[el])
+		else:
+			array_new.append(el)
+	return weights[array_new]
 
 def shuffle(embeddings):
 	"""
@@ -167,10 +183,13 @@ def gauss(embeddings):
 	return torch.from_numpy(gauss_embeddings).float()
 
 #shuffled_embeddings = shuffle(model.transformer.wte.weight)
-#model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
-gauss_embeddings = gauss(model.transformer.wte.weight)
-model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
-print(f"Embeddings are noisy with intensity (STD) = {args.noise_intensity}")
+print(f'EMBEDDINGS VORHER:{model.transformer.wte.weight}')
+shuffled_embeddings = shuffle_part(model.transformer.wte.weight, args.shuffle_perc)
+model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
+print(f'EMBEDDINGS NACHHER:{model.transformer.wte.weight}')
+#gauss_embeddings = gauss(model.transformer.wte.weight)
+#model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
+#print(f"Embeddings are noisy with intensity (STD) = {args.noise_intensity}")
 
 if args.tied_weights:
 	model.tie_weights()
