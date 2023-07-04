@@ -183,10 +183,10 @@ def gauss(embeddings):
 	return torch.from_numpy(gauss_embeddings).float()
 
 #shuffled_embeddings = shuffle(model.transformer.wte.weight)
-print(f'EMBEDDINGS VORHER:{model.transformer.wte.weight}')
+#print(f'EMBEDDINGS VORHER:{model.transformer.wte.weight}')
 shuffled_embeddings = shuffle_part(model.transformer.wte.weight, args.shuffle_perc)
 model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
-print(f'EMBEDDINGS NACHHER:{model.transformer.wte.weight}')
+#print(f'EMBEDDINGS NACHHER:{model.transformer.wte.weight}')
 #gauss_embeddings = gauss(model.transformer.wte.weight)
 #model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
 #print(f"Embeddings are noisy with intensity (STD) = {args.noise_intensity}")
