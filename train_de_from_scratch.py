@@ -42,7 +42,7 @@ train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", data_files={'validation2': 'tiger_UTF-8.txt'})
 news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
-europarl = load_dataset("csv", delimiter="\t", data_files={'train': 'europarl.txt'})
+europarl = load_dataset("text", data_files={'train': 'europarl.txt'})
 datasets["train"] = train
 datasets["validation1"] = validation
 datasets["validation3"] = news_corpus["train"]
@@ -115,6 +115,7 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
+eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -138,11 +139,11 @@ trainer = My_Trainer(
 	model=model,
 	args=training_args,
 	train_dataset=lm_datasets["train"],
-	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
+	eval_dataset=eval_dataset
 )
 
 print("----- Dataset Examples  -----")
-print(tokenizer.decode(train_dataset[0]["input_ids"]))
+print(tokenizer.decode(lm_datasets["train"][0]["input_ids"]))
 
 for dataset in eval_dataset:
 	print(f'{dataset}:\t{tokenizer.decode(eval_dataset[dataset][0]["input_ids"])}')
