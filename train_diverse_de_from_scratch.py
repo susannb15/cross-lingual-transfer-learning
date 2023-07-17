@@ -36,18 +36,41 @@ args = parser.parse_args()
 
 wandb.init(group=args.group)
 
+tiger = pd.read_csv("tiger_UTF-8.txt", sep="\t", quoting=csv.QUOTE_NONE, encoding='utf-8', names=["text"])
+news_corpus = pd.read_csv("10kGNAD/articles.csv", sep="\t")
+europarl = pd.read_csv("europarl.txt", sep="\t", names=["text"])
+
+corpora = pd.concat([tiger[:math.ceil(len(tiger)*0.9)], news_corpus["text"][:math.ceil(len(news_corpus)*0.9)], europarl[:math.ceil(len(europarl)*0.9)]])
+
+corpora.drop(corpora.columns[1], axis=1, inplace=True)
+corpora.dropna()
+
+len_all = len(tiger)+len(news_corpus)+len(europarl)
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
-validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
-datasets = load_dataset("text", data_files={'validation2': 'tiger_UTF-8.txt'})
-news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
-europarl = load_dataset("csv", delimiter="\t", data_files={'train': 'europarl.txt'})
-datasets["train"] = train
-datasets["validation1"] = validation
-datasets["validation3"] = news_corpus["train"]
-datasets["validation4"] = europarl["train"]
+train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
+val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
+#tiger = load_dataset("text", data_files={'train': 'tiger_UTF-8.txt'})
+#news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
+#europarl = load_dataset("text", data_files={'train': 'europarl.txt'}
+#d["train"] = concatenate_datasets([tiger, news_corpus, europarl], split='train[:95%]')
+#datasets["train"]= concatenate_datasets(d["train"], train)
+#datasets["validation1"] = val_wiki
+#datasets["validation2"] = load_dataset(tiger
+#datasets["validation3"] = load_dataset
 
+dataset = Dataset.from_pandas(corpora)
+
+
+datasets["train"] = concatenate_datasets([dataset, train])
+datasets["validation1"] = val_wiki
+datasets["validation2"] = Dataset.from_pandas(tiger[math.ceil(len(tiger)*0.9):])
+datasets["validation3"] = Dataset.from_pandas(news_corpus[math.ceil(len(news_corpus)*0.9):])
+datasets["validation4"] = Dataset.from_pandas(europarl[math.ceil(len(europarl)*0.9):])
+
+datasets["train"].shuffle()
+
+print(len(datasets["train"]["text"]))
 
 from datasets import ClassLabel, Value
 import random
@@ -79,9 +102,7 @@ config = AutoConfig.from_pretrained(
 	bos_token_id=tokenizer.bos_token_id,
 	eos_token_id=tokenizer.eos_token_id,
 	)
-
-print(f"Config for German model from scratch\n{config}")
-
+#config = args.config
 model = GPT2LMHeadModel(config)
 
 
@@ -125,8 +146,8 @@ training_args = TrainingArguments(
 	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
-	#num_train_epochs=20,
-	max_steps=200000,
+	num_train_epochs=20,
+	#max_steps=100000,
 	eval_steps=15000,
 	save_steps=15000,
 	warmup_steps = 30000,
@@ -141,12 +162,6 @@ trainer = My_Trainer(
 	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
 )
 
-print("----- Dataset Examples  -----")
-print(tokenizer.decode(train_dataset[0]["input_ids"]))
 
-for dataset in eval_dataset:
-	print(f'{dataset}:\t{tokenizer.decode(eval_dataset[dataset][0]["input_ids"])}')
-
-
-#trainer.train()
-#trainer.evaluate()
+trainer.train()
+trainer.evaluate()
