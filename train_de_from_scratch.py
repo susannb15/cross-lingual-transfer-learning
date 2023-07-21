@@ -18,6 +18,7 @@ import random
 import pandas as pd
 import csv
 import math
+import numpy as np
 
 random.seed(42)
 
@@ -38,7 +39,7 @@ wandb.init(group=args.group)
 
 
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[70:90%]')
+train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
 validation = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 datasets = load_dataset("text", data_files={'validation2': 'tiger_UTF-8.txt'})
 news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
@@ -68,20 +69,19 @@ def show_random_elements(dataset, num_examples=10):
 			df[column] = df[column].transform(lambda i: typ.names[i])
 
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel, GPT2Config
 
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 
-config = AutoConfig.from_pretrained(
-	"gpt2",
-	vocab_size=len(tokenizer),
-	n_ctx=256,
-	bos_token_id=tokenizer.bos_token_id,
-	eos_token_id=tokenizer.eos_token_id,
-	)
+#config = AutoConfig.from_pretrained(
+#	"gpt2",
+#	vocab_size=len(tokenizer),
+#	n_ctx=256,
+#	bos_token_id=tokenizer.bos_token_id,
+#	eos_token_id=tokenizer.eos_token_id,
+#	)
 
-print(f"Config for German model from scratch\n{config}")
-
+config = GPT2Config(n_ctx=256, vocab_size=len(tokenizer), bos_token_id=tokenizer.bos_token_id, eos_token_id=tokenizer.eos_token_id)
 model = GPT2LMHeadModel(config)
 
 
@@ -115,6 +115,7 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
+train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 45000, with_indices=True)
 eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
 
 from transformers import Trainer, TrainingArguments
@@ -126,8 +127,8 @@ training_args = TrainingArguments(
 	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
-	#num_train_epochs=20,
-	max_steps=200000,
+	num_train_epochs=30,
+	#max_steps=200000,
 	eval_steps=15000,
 	save_steps=15000,
 	warmup_steps = 30000,
@@ -138,16 +139,17 @@ training_args = TrainingArguments(
 trainer = My_Trainer(
 	model=model,
 	args=training_args,
-	train_dataset=lm_datasets["train"],
+	train_dataset=train_dataset,
 	eval_dataset=eval_dataset
 )
 
-print("----- Dataset Examples  -----")
-print(tokenizer.decode(lm_datasets["train"][0]["input_ids"]))
+#print("----- Dataset Examples  -----")
+#print(tokenizer.decode(lm_datasets["train"][0]["input_ids"]))
 
-for dataset in eval_dataset:
-	print(f'{dataset}:\t{tokenizer.decode(eval_dataset[dataset][0]["input_ids"])}')
+#for dataset in eval_dataset:
+#	print(f'{dataset}:\t{tokenizer.decode(eval_dataset[dataset][0]["input_ids"])}')
 
+print(train_dataset.shape)
 
 #trainer.train()
 #trainer.evaluate()

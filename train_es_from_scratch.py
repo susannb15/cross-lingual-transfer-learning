@@ -62,18 +62,11 @@ def show_random_elements(dataset, num_examples=10):
 
 print(show_random_elements(datasets["train"]))
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel, GPT2Config
 
 tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
 
-config = AutoConfig.from_pretrained(
-	"gpt2",
-	vocab_size=len(tokenizer),
-	n_ctx=256,
-	bos_token_id=tokenizer.bos_token_id,
-	eos_token_id=tokenizer.eos_token_id,
-	)
-#config = args.config
+config = GPT2Config(n_ctx=256, vocab_size=len(tokenizer), bos_token_id=tokenizer.bos_token_id, eos_token_id=tokenizer.eos_token_id)
 model = GPT2LMHeadModel(config)
 
 
@@ -140,6 +133,9 @@ for i, example in enumerate(lm_datasets["train"]["input_ids"]):
 print(f"BAD!!!! {BAD_counter}")
 print(f"GOOD!!! {GOOD_counter}")
 
+train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 45000, with_indices=True)
+eval_dataset = {'validation': lm_datasets["validation"]}
+
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
 
@@ -149,24 +145,23 @@ training_args = TrainingArguments(
 	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
-	num_train_epochs=20,
-	#max_steps=100000,
+    num_train_epochs=30,
+	#max_steps=200000,
 	eval_steps=15000,
 	save_steps=15000,
 	warmup_steps = 30000,
 	seed=42
 )
 
-print("MODEL")
-print(model)
 
 trainer = My_Trainer(
 	model=model,
 	args=training_args,
-	train_dataset=lm_datasets["train"],
-	eval_dataset={'validation': lm_datasets["validation"]}
+	train_dataset=train_dataset,
+	eval_dataset=eval_dataset
 )
 
+print(train_dataset.shape)
 
-trainer.train()
-trainer.evaluate()
+#trainer.train()
+#trainer.evaluate()

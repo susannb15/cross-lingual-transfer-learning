@@ -58,18 +58,11 @@ def show_random_elements(dataset, num_examples=10):
 
 print(show_random_elements(datasets["train"]))
 
-from transformers import GPT2Tokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel
+from transformers import GPT2Tokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel, GPT2Config
 
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-config = AutoConfig.from_pretrained(
-	"gpt2",
-	vocab_size=len(tokenizer),
-	n_ctx=256,
-	bos_token_id=tokenizer.bos_token_id,
-	eos_token_id=tokenizer.eos_token_id,
-	)
-#config = args.config
+config = GPT2Config(n_ctx=256, vocab_size=len(tokenizer), bos_token_id=tokenizer.bos_token_id, eos_token_id=tokenizer.eos_token_id)
 model = GPT2LMHeadModel(config)
 
 
@@ -78,7 +71,6 @@ def tokenize_function(examples):
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 
-print(tokenized_datasets["train"]["input_ids"][0])
 
 block_size=256
 
@@ -109,6 +101,8 @@ lm_datasets = tokenized_datasets.map(
 	num_proc=4,
 )
 
+train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 45000, with_indices=True)
+eval_dataset = lm_datasets["validation"]
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -119,24 +113,22 @@ training_args = TrainingArguments(
 	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
-	num_train_epochs=20,
-	#max_steps=100000,
+	#max_steps=200000,
+    num_train_epochs=30,
 	eval_steps=15000,
 	save_steps=15000,
 	warmup_steps = 30000,
 	seed=42
 )
 
-print("MODEL")
-print(model)
 
 trainer = My_Trainer(
 	model=model,
 	args=training_args,
-	train_dataset=lm_datasets["train"],
-	eval_dataset={'validation': lm_datasets["validation"]}
+	train_dataset=train_dataset,
+	eval_dataset=eval_dataset
 )
 
 
-trainer.train()
+#trainer.train()
 trainer.evaluate()

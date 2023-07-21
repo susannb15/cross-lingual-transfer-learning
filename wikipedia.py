@@ -417,7 +417,7 @@ class Wikipedia(datasets.BeamBasedBuilder):
 
     def _split_generators(self, dl_manager, pipeline):
         def _base_url(lang):
-            return _BASE_URL_TMPL.format(lang=lang.replace("-", "_"), date="20221001")
+            return _BASE_URL_TMPL.format(lang=lang.replace("-", "_"), date="20230701")
 
         lang = self.config.language
 
