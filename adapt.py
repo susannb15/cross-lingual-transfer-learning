@@ -64,26 +64,6 @@ def show_random_elements(dataset, num_examples=10):
         if isinstance(typ, ClassLabel):
             df[column] = df[column].transform(lambda i: typ.names[i])
 
-def tokenize_function(examples):
-    return tokenizer(examples["text"])
-
-def group_texts(examples):
-    # Concatenate all texts.
-    concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
-    total_length = len(concatenated_examples[list(examples.keys())[0]])
-    # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
-    # customize this part to your needs.
-    if total_length >= block_size:
-        total_length = (total_length // block_size) * block_size
-    # Split by chunks of max_len.
-    result = {
-        k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
-        for k, t in concatenated_examples.items()
-        }
-    result["labels"] = result["input_ids"].copy()
-    return result
-
-
 def shuffle_part(weights, perc):
     array = np.arange(weights.shape[0])
     idx_dict = dict()
@@ -187,7 +167,7 @@ def main():
 		model.transformer.wte.weight = embed_new
 		print(f"Adjusted wte size: {embed_prior.shape != model.wte.shape}")
 
-	if model.transforer.wte.weight.shape[0] > len(tokenizer):
+	if model.transformer.wte.weight.shape[0] > len(tokenizer):
 		# embeddings have to be reduced; e.g. DE model adapted on EN
 		embed_new = embed_prior[:len(tokenizer),:]
 		model.transformer.wte.weight = embed_new
@@ -207,7 +187,7 @@ def main():
 	else:
 		shuffled_embeddings = shuffle_embeddings(embed_prior)
 		model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
-		print(f"WEIGHTS ARE SHUFFLED: {embed_prior != model.wte}")
+		print(f"WEIGHTS ARE SHUFFLED: {embed_prior != model.transformer.wte}")
 
 	print(len(tokenizer) == model.transformer.wte.weight.shape[0])
 	assert len(tokenizer) == model.transformer.wte.weight.shape[0]
@@ -223,15 +203,34 @@ def main():
 	model.transformer.wte.weight.requires_grad = True
 	model.transformer.wpe.weight.requires_grad = True
 	
-	print(f"TIED WEIGHTS: {model.wte == model.lm_head} {model.transformer.wte.weight is model.lm_head.weight}")
+	print(f"TIED WEIGHTS: {model.transformer.wte.weight == model.lm_head.weight} {model.transformer.wte.weight is model.lm_head.weight}")
 	print("ADAPTED PARAMETERS:")
 	for name, param in model.named_parameters():
 		if param.requires_grad:
 			print(name, param.shape)
 
+	def tokenize_function(examples):
+		return tokenizer(examples["text"])
+
 	# tokenize data
 	tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 	block_size=args.block_size
+
+	def group_texts(examples):
+		# Concatenate all texts.
+		concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
+		total_length = len(concatenated_examples[list(examples.keys())[0]])
+		# We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
+		# customize this part to your needs.
+		if total_length >= block_size:
+			total_length = (total_length // block_size) * block_size
+			# Split by chunks of max_len.
+		result = {
+			k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
+			for k, t in concatenated_examples.items()
+			}
+		result["labels"] = result["input_ids"].copy()
+		return result
 
 	lm_datasets = tokenized_datasets.map(
 		group_texts,
@@ -241,7 +240,8 @@ def main():
 	)
 
 	# define fixed size for the dataset (because wikipedias differ in size)
-	print(lm_datasets["train"].shape)
+	train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 15500, with_indices=True)
+	print(f"Train dataset size: {train_dataset.shape}")
 
 	training_args = TrainingArguments(
 		args.output_dir,
@@ -261,12 +261,12 @@ def main():
 	trainer = My_Trainer(
 		model=model,
 		args=training_args,
-		train_dataset=lm_datasets["train"],
+		train_dataset=train_dataset,
 		eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
 	)
 
-	#trainer.train()
-	#trainer.evaluate()
+	trainer.train()
+	trainer.evaluate()
 
 if __name__ == '__main__':
 	main()
