@@ -20,7 +20,6 @@ import pandas as pd
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
 
-random.seed(42)
 
 parser = argparse.ArgumentParser(description="Options")
 
