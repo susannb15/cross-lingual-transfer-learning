@@ -159,7 +159,7 @@ def main():
 	if model.transformer.wte.weight.shape[0] < len(tokenizer):
 		# embeddings have to be filled up; e.g. EN model adapted on DE
 		diff = len(tokenizer)-model.transformer.wte.weight.shape[0]
-		print(f"DIFF: {diff}")
+		print(f"Difference: {diff}")
 		perm = torch.randperm(embed_prior.shape[0])
 		copy_idx = perm[:diff]
 		copies = embed_prior[copy_idx]
@@ -189,7 +189,6 @@ def main():
 		model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
 		print(f"WEIGHTS ARE SHUFFLED: {embed_prior != model.transformer.wte}")
 
-	print(len(tokenizer) == model.transformer.wte.weight.shape[0])
 	assert len(tokenizer) == model.transformer.wte.weight.shape[0]
 
 	# tie weights

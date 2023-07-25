@@ -1,6 +1,6 @@
 export CUDA_VISIBLE_DEVICES=0
 
-OUTPUT_DIR="/local/susannb/cross-lingual-transfer-learning/adapted_models/de_on_de12"
+OUTPUT_DIR="/local/susannb/cross-lingual-transfer-learning/adapted_models/de_on_de"
 NATIVE_PATH="/local/susannb/cross-lingual-transfer-learning/native_models/native_de/checkpoint-45000"
 
 python /local/susannb/cross-lingual-transfer-learning/adapt.py \
