@@ -163,5 +163,5 @@ trainer = My_Trainer(
 
 print(train_dataset.shape)
 
-#trainer.train()
-#trainer.evaluate()
+trainer.train()
+trainer.evaluate()

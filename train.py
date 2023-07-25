@@ -19,16 +19,19 @@ random.seed(42)
 
 parser = argparse.ArgumentParser(description="Options")
 
-parser.add_argument('--name', type=str, help='Name of the output dir.')
+parser.add_argument('--name', type=str, required=True, help='Name of the output dir.')
 #parser.add_argument('--config', type=str, help='Config file.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-parser.add_argument('--group', type=str, help='Group parameter for wandb')
-parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
+parser.add_argument('--group', type=str, required=True, help='Group parameter for wandb')
+#parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
+parser.add_argument('--native_model', type=str, required=True, help="Path to the native model that should be adapted.")
 parser.add_argument('--tied_weights', action='store_true')
 parser.add_argument('--no-tied_weights', dest='tied_weights', action='store_false')
+parser.add_argument('output_dir', type=str, required=True, help="Output directory to save the model to.")
 parser.add_argument('--shuffle_perc', type=float, help='Shuffle only X% of the embeddings')
 parser.set_defaults(tied_weights=True)
-parser.add_argument('--noise_intensity', type=float, default=0.1, help='Standard deviation for the generation of a normal distribution with mean 0. The generated distribution is added to the embeddings to generate noisy embeddings.')
+parser.add_argument('--seed', type=int, required=True, help="Seed for the training.")
+parser.add_argument('--noise_intensity', type=float, help='Standard deviation for the generation of a normal distribution with mean 0. The generated distribution is added to the embeddings to generate noisy embeddings.')
 
 args = parser.parse_args()
 

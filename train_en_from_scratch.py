@@ -102,7 +102,7 @@ lm_datasets = tokenized_datasets.map(
 )
 
 train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 45000, with_indices=True)
-eval_dataset = lm_datasets["validation"]
+eval_dataset = {'validation': lm_datasets["validation"]}
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -130,5 +130,5 @@ trainer = My_Trainer(
 )
 
 
-#trainer.train()
+trainer.train()
 trainer.evaluate()

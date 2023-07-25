@@ -149,7 +149,6 @@ trainer = My_Trainer(
 #for dataset in eval_dataset:
 #	print(f'{dataset}:\t{tokenizer.decode(eval_dataset[dataset][0]["input_ids"])}')
 
-print(train_dataset.shape)
 
-#trainer.train()
-#trainer.evaluate()
+trainer.train()
+trainer.evaluate()
