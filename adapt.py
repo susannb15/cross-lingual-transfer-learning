@@ -23,7 +23,7 @@ from transformers.integrations import *
 
 parser = argparse.ArgumentParser(description="Options")
 
-parser.add_argument('--name', type=str, required=True, help='Name of the output dir.')
+parser.add_argument('--name', type=str, help='Name of the output dir.')
 #parser.add_argument('--config', type=str, help='Config file.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
 parser.add_argument('--block_size', type=int, default=256)
@@ -33,17 +33,22 @@ parser.add_argument('--max_steps', type=int)
 parser.add_argument('--eval_steps', type=int, default=1000)
 parser.add_argument('--save_steps', type=int, default=1000)
 parser.add_argument('--warmup_steps', type=int, default=10000)
-parser.add_argument('--group', type=str, required=True, help='Group parameter for wandb')
+parser.add_argument('--group', type=str, help='Group parameter for wandb')
 #parser.add_argument('--model_lng', type=str, help="Model language. Options: de, es, en, gpt2")
-parser.add_argument('--language', type=str, required=True, help="Training language: de|en|es")
-parser.add_argument('--native_model', type=str, required=True, help="Path to the native model that should be adapted.")
+parser.add_argument('--language', type=str, help="Training language: de|en|es")
+parser.add_argument('--native_model', type=str, help="Path to the native model that should be adapted.")
 parser.add_argument('--tied_weights', action='store_true')
 parser.add_argument('--no-tied_weights', dest='tied_weights', action='store_false')
-parser.add_argument('output_dir', type=str, required=True, help="Output directory to save the model to.")
+parser.add_argument('--output_dir', type=str, help="Output directory to save the model to.")
 parser.add_argument('--shuffle_perc', type=float, help='Shuffle only X% of the embeddings')
 parser.set_defaults(tied_weights=True)
-parser.add_argument('--seed', type=int, required=True, help="Seed for the training.")
+parser.add_argument('--seed', type=int, help="Seed for the training.")
 parser.add_argument('--noise_intensity', type=float, help='Standard deviation for the generation of a normal distribution with mean 0. The generated distribution is added to the embeddings to generate noisy embeddings.')
+
+def set_seed(seed: int = 123):
+	torch.manual_seed(seed)
+	torch.cuda.manual_seed_all(seed)
+	np.random.seed(seed)
 
 def show_random_elements(dataset, num_examples=10):
     assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
@@ -148,7 +153,7 @@ def main():
 		train = load_dataset("wikipedia", "20220301.en", split='train[70:90%]')
 		validation = load_dataset("wikipedia", "20220301.en", split='train[90:95%]')
 		datasets["train"] = train
-        datasets["validation"] = validation
+		datasets["validation"] = validation
 
 		# load English tokenizer
 		tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
@@ -158,7 +163,7 @@ def main():
 		train = load_dataset("wikipedia.py", "20220301.es", split='train[70:90%]', beam_runner="DirectRunner")
 		validation = load_dataset("wikipedia.py", "20220301.es", split='train[90:95%]', beam_runner="DirectRunner")
 		datasets["train"] = train
-        datasets["validation"] = validation
+		datasets["validation"] = validation
 
 		# load Spanish tokenizer
 		tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
@@ -221,8 +226,8 @@ def main():
 	print(f"TIED WEIGHTS: {model.wte == model.lm_head} {model.transformer.wte.weight is model.lm_head.weight}")
 	print("ADAPTED PARAMETERS:")
 	for name, param in model.named_parameters():
-    	if param.requires_grad:
-        	print(name, param.shape)
+		if param.requires_grad:
+			print(name, param.shape)
 
 	# tokenize data
 	tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
@@ -234,6 +239,9 @@ def main():
 		batch_size=1000,
 		num_proc=4,
 	)
+
+	# define fixed size for the dataset (because wikipedias differ in size)
+	print(lm_datasets["train"].shape)
 
 	training_args = TrainingArguments(
 		args.output_dir,
@@ -257,8 +265,8 @@ def main():
 		eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
 	)
 
-	trainer.train()
-	trainer.evaluate()
+	#trainer.train()
+	#trainer.evaluate()
 
 if __name__ == '__main__':
 	main()
