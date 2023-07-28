@@ -164,8 +164,8 @@ def main():
 		copy_idx = perm[:diff]
 		copies = embed_prior[copy_idx]
 		embed_new = torch.cat((embed_prior, copies), 0)
-		model.transformer.wte.weight = embed_new
-		print(f"Adjusted wte size: {embed_prior.shape != model.wte.shape}")
+		model.transformer.wte.weight = nn.Parameter(embed_new)
+		print(f"Adjusted wte size: {embed_prior.shape != model.transformer.wte.weight.shape}")
 
 	if model.transformer.wte.weight.shape[0] > len(tokenizer):
 		# embeddings have to be reduced; e.g. DE model adapted on EN
