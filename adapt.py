@@ -170,8 +170,8 @@ def main():
 	if model.transformer.wte.weight.shape[0] > len(tokenizer):
 		# embeddings have to be reduced; e.g. DE model adapted on EN
 		embed_new = embed_prior[:len(tokenizer),:]
-		model.transformer.wte.weight = embed_new
-		print(f"Adjusted wte size: {embed_prior.shape != model.wte.shape}")
+		model.transformer.wte.weight = nn.Parameter(embed_new)
+		print(f"Adjusted wte size: {embed_prior.shape != model.transformer.wte.weight.shape}")
 
 	# modify embeddings
 	embed_prior = model.transformer.wte.weight
