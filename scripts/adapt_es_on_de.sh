@@ -1,10 +1,10 @@
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=2
 
-OUTPUT_DIR="/local/susannb/cross-lingual-transfer-learning/adapted_models/es_on_de3"
+OUTPUT_DIR="/local/susannb/cross-lingual-transfer-learning/adapted_models/es_on_de5"
 NATIVE_PATH="/local/susannb/cross-lingual-transfer-learning/native_models/native_es/checkpoint-45000"
 
 python /local/susannb/cross-lingual-transfer-learning/adapt.py \
-	--seed 4321 \
+	--seed 5 \
 	--name es_on_de \
 	--group adaptation_on_de \
 	--lr 1e-4 \
