@@ -242,7 +242,7 @@ def main():
 	train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 15500, with_indices=True)
 	print(f"Train dataset size: {train_dataset.shape}")
 
-	if args.language de:
+	if args.language == "de":
 		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
 	else:
 		eval_dataset = {'wikipedia': lm_datasets["validation"]}
