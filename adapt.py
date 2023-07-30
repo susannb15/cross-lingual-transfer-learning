@@ -242,6 +242,11 @@ def main():
 	train_dataset = lm_datasets["train"].filter(lambda example, indice: indice < 15500, with_indices=True)
 	print(f"Train dataset size: {train_dataset.shape}")
 
+	if args.language de:
+		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
+	else:
+		eval_dataset = {'wikipedia': lm_datasets["validation"]}
+
 	training_args = TrainingArguments(
 		args.output_dir,
 		do_train=True,
@@ -256,12 +261,12 @@ def main():
 		seed=args.seed
 	)
 
-
+	
 	trainer = My_Trainer(
 		model=model,
 		args=training_args,
 		train_dataset=train_dataset,
-		eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
+		eval_dataset=eval_dataset
 	)
 
 	trainer.train()
