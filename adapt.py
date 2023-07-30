@@ -15,7 +15,7 @@ from trainer_mod import My_Trainer
 import wandb
 import random
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel, GPT2Tokenizer
 import pandas as pd
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
