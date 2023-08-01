@@ -1,12 +1,12 @@
 export CUDA_VISIBLE_DEVICES=2
 
-OUTPUT_DIR="/local/susannb/cross-lingual-transfer-learning/adapted_models/en_on_en5"
-NATIVE_PATH="/local/susannb/cross-lingual-transfer-learning/native_models/native_en/checkpoint-45000"
+OUTPUT_DIR="/local/susannb/cross-lingual-transfer-learning/adapted_models/de_on_es1"
+NATIVE_PATH="/local/susannb/cross-lingual-transfer-learning/native_models/native_de/checkpoint-45000"
 
 python /local/susannb/cross-lingual-transfer-learning/adapt.py \
-	--seed 90 \
-	--name en_on_en \
-	--group adaptation_on_en \
+	--seed 765 \
+	--name de_on_es \
+	--group adaptation_on_es \
 	--lr 1e-4 \
 	--tied_weights \
 	--output_dir $OUTPUT_DIR \
@@ -17,4 +17,4 @@ python /local/susannb/cross-lingual-transfer-learning/adapt.py \
 	--eval_steps 5000 \
 	--save_steps 5000 \
 	--warmup_steps 30000 \
-	--language en
+	--language es
