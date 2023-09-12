@@ -1,26 +1,38 @@
 import os
 #os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
-#os.environ["WANDB_DISABLED"] = "true"
+os.environ["WANDB_DISABLED"] = "true"
 
 import transformers
 from datasets import load_dataset
 from datasets import DatasetDict
+from datasets import ClassLabel, Value
 from itertools import chain
 import torch
 import torch.nn as nn
 import argparse
 import math
 from trainer_mod import My_Trainer
-
-
-datasets = DatasetDict()
-#train = load_dataset("wikipedia", "20220301.de", split='train[:3%]')
-datasets = load_dataset("text", encoding='utf-8', data_files={'validation': 'tiger_UTF-8.txt'})
-#datasets["train"] = train
-
-from datasets import ClassLabel, Value
 import random
+import numpy as np
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead, AutoConfig, GPT2LMHeadModel, GPT2Tokenizer
 import pandas as pd
+from transformers import Trainer, TrainingArguments
+from transformers.integrations import *
+import re
+from tqdm import tqdm
+
+# for now one model, one eval run
+
+parser = argparse.ArgumentParser(description="Options")
+
+parser.add_argument('--model', type=str, help="Path to the native model.")
+parser.add_argument('--dataset', type=str, help="Path to the evaluation dataset.")
+parser.add_argument('--tokenizer', type=str, help="Tokenizer of the model.")
+
+def set_seed(seed: int = 123):
+	torch.manual_seed(seed)
+	torch.cuda.manual_seed_all(seed)
+	np.random.seed(seed)
 
 def show_random_elements(dataset, num_examples=10):
     assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
@@ -30,78 +42,86 @@ def show_random_elements(dataset, num_examples=10):
         while pick in picks:
             pick = random.randint(0, len(dataset)-1)
         picks.append(pick)
-    
+
     df = pd.DataFrame(dataset[picks])
     for column, typ in dataset.features.items():
         if isinstance(typ, ClassLabel):
             df[column] = df[column].transform(lambda i: typ.names[i])
 
-#print(show_random_elements(datasets["train"]))
+def main():
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelWithLMHead
+	args = parser.parse_args()
 
-model = AutoModelWithLMHead.from_pretrained("dbmdz/german-gpt2")
-tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
-#print("EMB SHAPE")
-#print(de_emb_shuffled.shape)
-#de_emb_shuffled = de_emb_shuffled[:50257]
-#print(de_emb_shuffled.shape)
+	set_seed(5) 
 
-# replace es embeddings with the shuffled de embeddings
-#print(model.transformer.wte.weight.shape)
-#print(model.lm_head.weight.shape)
-
-
-def tokenize_function(examples):
-	return tokenizer(examples["text"])
-
-tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
-block_size=256
-
-def group_texts(examples):
-    # Concatenate all texts.
-    concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
-    total_length = len(concatenated_examples[list(examples.keys())[0]])
-    # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
-    # customize this part to your needs.
-    if total_length >= block_size:
-        total_length = (total_length // block_size) * block_size
-    # Split by chunks of max_len.
-    result = {
-        k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
-        for k, t in concatenated_examples.items()
-        }
-    result["labels"] = result["input_ids"].copy()
-    return result
-
-lm_datasets = tokenized_datasets.map(
-    group_texts,
-    batched=True,
-    batch_size=1000,
-    num_proc=4,
-)
+	validation = load_dataset("text", data_files={'train': args.dataset})
+	tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
+	models = []
+	chps = []
+	results = dict()
+	try:
+		model = AutoModelForCausalLM.from_pretrained(args.model)
+		models.append(model)
+		chps.append(0)
+	except:
+		for checkpoint in os.listdir(args.model):
+			chp_path = os.path.join(args.model, checkpoint)
+			models.append(AutoModelForCausalLM.from_pretrained(chp_path))
+			chp = re.split("-", chp_path)[1]
+			chps.append(chp)
 
 
-from transformers import Trainer, TrainingArguments
-from transformers.integrations import *
+	def tokenize_function(examples):
+		return tokenizer(examples["text"])
 
-training_args = TrainingArguments(
-    "native_model",
-	do_train=False,
-    evaluation_strategy = "epoch",
-    learning_rate=2e-5,
-    weight_decay=0.01,
-	num_train_epochs=10,
-	seed=42
-)
+	# tokenize data
+	tokenized_datasets = validation.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
+	block_size=256
+
+	def group_texts(examples):
+		# Concatenate all texts.
+		concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
+		total_length = len(concatenated_examples[list(examples.keys())[0]])
+		# We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
+		# customize this part to your needs.
+		if total_length >= block_size:
+			total_length = (total_length // block_size) * block_size
+			# Split by chunks of max_len.
+		result = {
+			k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
+			for k, t in concatenated_examples.items()
+			}
+		result["labels"] = result["input_ids"].copy()
+		return result
+
+	lm_datasets = tokenized_datasets.map(
+		group_texts,
+		batched=True,
+		batch_size=1000,
+		num_proc=4,
+	)
+	#test_datasets = lm_datasets["train"].filter(lambda example, indice: indice < 10, with_indices=True)
 
 
-trainer = My_Trainer(
-    model=model,
-    args=training_args,
-    #train_dataset=lm_datasets["train"],
-    eval_dataset=lm_datasets["validation"],
-)
+	training_args = TrainingArguments(
+		output_dir=args.model+"eval",
+		do_train=False,
+	)
 
+	for model, chp in zip(models, chps):	
+		trainer = My_Trainer(
+			model=model,
+			args=training_args,
+			eval_dataset=lm_datasets["train"]
+		)
 
-trainer.evaluate()
+		model_eval = trainer.evaluate()
+		ppl = model_eval["eval_perplexity"]
+		results[chp] = ppl
+
+	with open("eval.txt", "w+", encoding='utf-8') as f:
+		for chp in results:
+			f.write(str(chp)+"\t"+str(results[chp])+"\n")
+
+if __name__ == '__main__':
+	main()
