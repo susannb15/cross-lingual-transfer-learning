@@ -43,9 +43,11 @@ europarl = pd.read_csv("europarl.txt", sep="\t", names=["text"])
 corpora = pd.concat([tiger[:math.ceil(len(tiger)*0.9)], news_corpus["text"][:math.ceil(len(news_corpus)*0.9)], europarl[:math.ceil(len(europarl)*0.9)]])
 
 corpora.drop(corpora.columns[1], axis=1, inplace=True)
-corpora.dropna()
+corpora_clean = corpora.dropna()
 
-len_all = len(tiger)+len(news_corpus)+len(europarl)
+print(corpora_clean.isna().sum())
+
+len_all = len(corpora_clean)
 
 datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
@@ -59,8 +61,12 @@ val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 #datasets["validation2"] = load_dataset(tiger
 #datasets["validation3"] = load_dataset
 
-dataset = Dataset.from_pandas(corpora)
+dataset = Dataset.from_pandas(corpora_clean)
 
+train = train.filter(lambda example, indice: indice < len_all, with_indices=True)
+
+print(dataset)
+print(train)
 
 datasets["train"] = concatenate_datasets([dataset, train])
 datasets["validation1"] = val_wiki
@@ -70,7 +76,7 @@ datasets["validation4"] = Dataset.from_pandas(europarl[math.ceil(len(europarl)*0
 
 datasets["train"].shuffle()
 
-print(len(datasets["train"]["text"]))
+print(f"Length of Dataset: {len(datasets['train']['text'])}")
 
 from datasets import ClassLabel, Value
 import random
@@ -128,6 +134,8 @@ def group_texts(examples):
 		}
 	result["labels"] = result["input_ids"].copy()
 	return result
+
+print(tokenized_datasets)
 
 lm_datasets = tokenized_datasets.map(
 	group_texts,
