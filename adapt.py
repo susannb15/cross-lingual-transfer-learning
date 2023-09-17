@@ -132,8 +132,10 @@ def main():
 		# load English data
 		train = load_dataset("wikipedia", "20220301.en", split='train[70:90%]')
 		validation = load_dataset("wikipedia", "20220301.en", split='train[90:95%]')
+		europarl = load_dataset("text", data_files={'train': 'europarl.en'})
 		datasets["train"] = train
-		datasets["validation"] = validation
+		datasets["validation1"] = validation
+		datasets["validation2"] = europarl
 
 		# load English tokenizer
 		tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
@@ -142,8 +144,10 @@ def main():
 		# load Spanish data
 		train = load_dataset("wikipedia.py", "20220301.es", split='train[70:90%]', beam_runner="DirectRunner")
 		validation = load_dataset("wikipedia.py", "20220301.es", split='train[90:95%]', beam_runner="DirectRunner")
+		europarl = load_dataset("text", data_files={'train': 'europarl.es'})
 		datasets["train"] = train
-		datasets["validation"] = validation
+		datasets["validation1"] = validation
+		datasets["validation2"] = europarl
 
 		# load Spanish tokenizer
 		tokenizer = AutoTokenizer.from_pretrained("datificate/gpt2-small-spanish")
@@ -243,9 +247,9 @@ def main():
 	print(f"Train dataset size: {train_dataset.shape}")
 
 	if args.language == "de":
-		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"]}
+		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
 	else:
-		eval_dataset = {'wikipedia': lm_datasets["validation"]}
+		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'europarl': lm_datasets["validation2"]}
 
 	training_args = TrainingArguments(
 		args.output_dir,
