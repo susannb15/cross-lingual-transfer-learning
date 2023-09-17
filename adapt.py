@@ -88,13 +88,12 @@ def shuffle_embeddings(embeddings):
     shuffled = embeddings[idx]
     return shuffled
 
-def gauss(embeddings):
+def gauss(embeddings, intensity):
     """
     Returns an embedding matrix with gaussian noise.
     """
     mean = 0
-    std = args.noise_intensity # intensity has to be defined in the args
-    noise = np.random.normal(mean, std, size=(embeddings.shape))
+    noise = np.random.normal(mean, intensity, size=(embeddings.shape))
     gauss_embeddings = embeddings.detach().numpy() + noise
     return torch.from_numpy(gauss_embeddings).float()
 
@@ -186,7 +185,7 @@ def main():
 		model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
 	elif args.noise_intensity is not None:
 		print(f"Apply Gauss noise {args.noise_intensity} to embedding layer.")	
-		gauss_embeddings = gauss(embed_prior)
+		gauss_embeddings = gauss(embed_prior, args.noise_intensity)
 		model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
 	else:
 		shuffled_embeddings = shuffle_embeddings(embed_prior)
