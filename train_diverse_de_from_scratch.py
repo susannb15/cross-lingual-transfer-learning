@@ -37,17 +37,39 @@ args = parser.parse_args()
 wandb.init(group=args.group)
 
 tiger = pd.read_csv("tiger_UTF-8.txt", sep="\t", quoting=csv.QUOTE_NONE, encoding='utf-8', names=["text"])
-news_corpus = pd.read_csv("10kGNAD/articles.csv", sep="\t")
+news_corpus = pd.read_csv("10kGNAD/articles.csv", sep="\t", header=0)
 europarl = pd.read_csv("europarl.txt", sep="\t", names=["text"])
 
-corpora = pd.concat([tiger[:math.ceil(len(tiger)*0.9)], news_corpus["text"][:math.ceil(len(news_corpus)*0.9)], europarl[:math.ceil(len(europarl)*0.9)]])
+tiger.dropna(inplace=True)
+tiger.reset_index(drop=True, inplace=True)
+news_corpus.dropna(inplace=True)
+news_corpus.reset_index(drop=True, inplace=True)
+europarl.dropna(inplace=True)
+europarl.reset_index(drop=True, inplace=True)
 
-corpora.drop(corpora.columns[1], axis=1, inplace=True)
-corpora_clean = corpora.dropna()
+max_len = math.ceil(min(len(tiger), len(news_corpus), len(europarl))*0.9)
 
-print(corpora_clean.isna().sum())
+tiger = tiger[:max_len]
+news_corpus = news_corpus[:max_len]
+europarl = europarl[:max_len]
 
-len_all = len(corpora_clean)
+tiger.reset_index(drop=True, inplace=True)
+news_corpus.reset_index(drop=True, inplace=True)
+europarl.reset_index(drop=True, inplace=True)
+
+#print(f"CORPUS LENGTHS: {len(tiger)}, {len(news_corpus)}, {len(europarl)}")
+#print(f"CORPORA: {tiger} {news_corpus} {europarl}")
+
+corpora = pd.concat([tiger, news_corpus, europarl])
+
+corpora = corpora[["text"]]
+
+
+#corpora.drop(corpora.columns[1], axis=1, inplace=True)
+#corpora.dropna(inplace=True)
+
+print(f"CONCAT: {len(corpora)} {corpora}")
+print(f"Length of the pandas corpus: {len(corpora)}")
 
 datasets = DatasetDict()
 train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
@@ -61,12 +83,9 @@ val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
 #datasets["validation2"] = load_dataset(tiger
 #datasets["validation3"] = load_dataset
 
-dataset = Dataset.from_pandas(corpora_clean)
+dataset = Dataset.from_pandas(corpora)
 
-train = train.filter(lambda example, indice: indice < len_all, with_indices=True)
-
-print(dataset)
-print(train)
+train = train.filter(lambda example, indice: indice < math.ceil(max_len*0.9), with_indices=True)
 
 datasets["train"] = concatenate_datasets([dataset, train])
 datasets["validation1"] = val_wiki
@@ -106,22 +125,31 @@ config = AutoConfig.from_pretrained(
 	vocab_size=len(tokenizer),
 	n_ctx=256,
 	bos_token_id=tokenizer.bos_token_id,
-	eos_token_id=tokenizer.eos_token_id,
+	eos_token_id=tokenizer.eos_token_id
 	)
 #config = args.config
 model = GPT2LMHeadModel(config)
 
+tokenizer.pad_token = tokenizer.eos_token
 
 def tokenize_function(examples):
-	return tokenizer(examples["text"])
+	return tokenizer(examples["text"], padding='max_length', max_length=256)
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 
+counter = 0
 block_size=256
+
+tokenized_datasets["train"] = tokenized_datasets["train"].map(remove_columns = ["__index_level_0__", "url", "title", "id"])
 
 def group_texts(examples):
 	# Concatenate all texts.
-	concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
+	try:
+		concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
+		#except TypeError:
+		#	concatenated_examples = {k: list(chain(*[examples[k]])) for k in examples.keys()}
+	except TypeError:
+		concatenated_examples = examples
 	total_length = len(concatenated_examples[list(examples.keys())[0]])
 	# We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
 	# customize this part to your needs.
@@ -134,16 +162,21 @@ def group_texts(examples):
 		}
 	result["labels"] = result["input_ids"].copy()
 	return result
-
-print(tokenized_datasets)
+	#except TypeError:
+		#for k in examples.keys():
+		#	print(k, examples[k])
+	#	global counter
+	#	counter += 1
 
 lm_datasets = tokenized_datasets.map(
-	group_texts,
-	batched=True,
-	batch_size=1000,
-	num_proc=4,
+	group_texts#,
+	#batched=True,
+	#batch_size=1000,
+	#num_proc=4,
 )
 
+print(lm_datasets["train"])
+print(lm_datasets["train"][0])
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *

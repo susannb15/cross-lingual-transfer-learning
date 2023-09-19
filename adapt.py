@@ -246,9 +246,11 @@ def main():
 	print(f"Train dataset size: {train_dataset.shape}")
 
 	if args.language == "de":
-		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
+		europarl = lm_datasets["validation4"].filter(lambda example, indice: indice < 10000, with_indices=True) # europarl is laaaaaarge
+		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': europarl}
 	else:
-		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'europarl': lm_datasets["validation2"]}
+		europarl = lm_datasets["validation2"].filter(lambda example, indice: indice < 10000, with_indices=True)
+		eval_dataset = {'wikipedia': lm_datasets["validation1"], 'europarl': europarl}
 
 	training_args = TrainingArguments(
 		args.output_dir,
