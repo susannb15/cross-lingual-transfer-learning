@@ -28,6 +28,7 @@ parser = argparse.ArgumentParser(description="Options")
 parser.add_argument('--model', type=str, help="Path to the native model.")
 parser.add_argument('--dataset', type=str, help="Path to the evaluation dataset.")
 parser.add_argument('--tokenizer', type=str, help="Tokenizer of the model.")
+parser.add_argument('--file_name', type=str, help="Save eval metrics to this file.")
 
 def set_seed(seed: int = 123):
 	torch.manual_seed(seed)
@@ -119,7 +120,7 @@ def main():
 		ppl = model_eval["eval_perplexity"]
 		results[chp] = ppl
 
-	with open("eval.txt", "w+", encoding='utf-8') as f:
+	with open(args.file_name, "w+", encoding='utf-8') as f:
 		for chp in results:
 			f.write(str(chp)+"\t"+str(results[chp])+"\n")
 
