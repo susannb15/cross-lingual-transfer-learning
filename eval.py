@@ -101,7 +101,7 @@ def main():
 		batch_size=1000,
 		num_proc=4,
 	)
-	#test_datasets = lm_datasets["train"].filter(lambda example, indice: indice < 10, with_indices=True)
+	europarl_short = lm_datasets["train"].filter(lambda example, indice: indice < 10000, with_indices=True)
 
 
 	training_args = TrainingArguments(
@@ -113,7 +113,7 @@ def main():
 		trainer = My_Trainer(
 			model=model,
 			args=training_args,
-			eval_dataset=lm_datasets["train"]
+			eval_dataset=europarl_short
 		)
 
 		model_eval = trainer.evaluate()

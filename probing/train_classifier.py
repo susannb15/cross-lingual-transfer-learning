@@ -20,6 +20,7 @@ for i in range(13):
 	lr_clf = LogisticRegression(random_state=42).fit(train, tr_labels)
 	predictions = lr_clf.predict(test)
 	scores = classification_report(predictions, tt_labels)
+	#scores = lr_clf.score(test, tt_labels)
 	print(f"Training finished. Score on test data: {scores}")
 	filename = os.path.join("classifiers", "clf_"+str(i))
 	pickle.dump(lr_clf, open(filename, 'wb'))

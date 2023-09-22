@@ -194,6 +194,7 @@ def main():
 
 	assert len(tokenizer) == model.transformer.wte.weight.shape[0]
 
+	print(len(tokenizer), model.transformer.wte.weight.shape[0])
 	# tie weights
 	if args.tied_weights:
 		model.tie_weights()
