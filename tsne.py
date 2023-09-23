@@ -13,9 +13,30 @@ tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
 model_before =  AutoModelWithLMHead.from_pretrained("de_from_scratch/checkpoint-45000")
 model_after =  AutoModelWithLMHead.from_pretrained("es_tied/checkpoint-60000")
 
+# load dataset
+with open("probing/probing_sents.txt", "r") as f:
+	sentences = f.readlines()
+
+# get representations and save as (word, rep) tuple
+def create_reps: 
+	reps = list()
+	for sent in sentences:
+		tokenized = tokenizer(sent, return_tensors="pt")
+		words = tokenizer.decode(tokenized["input_ids"])
+		with torch.no_grad():
+			outputs = args.model(**tokenized, labels=tokenized["input_ids"], output_hidden_states=True)
+		embeddings = outputs["hidden_states"][0]
+		for w, r in zip(words, embeddings):
+			reps.append((w, r.item()))			
+	with open(file_name, "w+") as f:
+		for w, r in reps:
+			f.write(w+","+str(r))
+
+def tsne:
 embeddings_before = model_before.transformer.wte.weight.detach().numpy()
 embeddings_after = model_after.transformer.wte.weight.detach().numpy()
 
+# T-SNE
 emb_tsne = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3).fit_transform(embeddings_before)
 ema_tsne = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3).fit_transform(embeddings_after)
 
