@@ -5,9 +5,9 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 # create de on de representations
 
 chps = np.arange(5000,105000, 5000)
-dirs = [os.path.join("representations_es", str(i)) for i in chps]
+dirs = [os.path.join("representations_de_shuffle_90", str(i)) for i in chps]
 tokenizer = AutoTokenizer.from_pretrained("dbmdz/german-gpt2")
-models = ["../adapted_models/es_on_de1/checkpoint-"+str(i) for i in chps]
+models = ["../adapted_models/de_on_de_shuf90_3/checkpoint-"+str(i) for i in chps]
 
 for (m_path, d) in zip(models, dirs):
 	m = AutoModelForCausalLM.from_pretrained(m_path)

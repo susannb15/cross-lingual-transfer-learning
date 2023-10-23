@@ -44,6 +44,8 @@ parser.add_argument('--shuffle_perc', type=float, help='Shuffle only X% of the e
 parser.set_defaults(tied_weights=True)
 parser.add_argument('--seed', type=int, help="Seed for the training.")
 parser.add_argument('--noise_intensity', type=float, help='Standard deviation for the generation of a normal distribution with mean 0. The generated distribution is added to the embeddings to generate noisy embeddings.')
+parser.add_argument('--layer', type=int, help="If this parameter is used, the Xth layer of the LM will be shuffled and adapted instead of the embedding layer.")
+parser.add_argument('--tokens', type=str, help="File of tokens that should be shuffled.")
 
 def set_seed(seed: int = 123):
 	torch.manual_seed(seed)
@@ -79,6 +81,21 @@ def shuffle_part(weights, perc):
         else:
             array_new.append(el)
     return weights[array_new]
+
+def shuffle_spec(weights, ind):
+	array = np.arange(weights.shape[0])
+	idx_dict = dict()
+	shuffle_indices = sorted(ind)
+	shuffled = random.sample(shuffle_indices, len(shuffle_indices))
+	for idx, idy in zip(shuffle_indices, shuffled):
+		idx_dict[idx] = idy
+	array_new = []
+	for el in array:
+		if el in idx_dict:
+			array_new.append(idx_dict[el])
+		else:
+			array_new.append(el)
+	return weights[array_new]
 
 def shuffle_embeddings(embeddings):
     """
@@ -187,6 +204,17 @@ def main():
 		print(f"Apply Gauss noise {args.noise_intensity} to embedding layer.")	
 		gauss_embeddings = gauss(embed_prior, args.noise_intensity)
 		model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
+	elif args.layer is not None:
+		print(f"Shuffle and adapt weights of layer {args.layer}.")
+		for name, param in model.named_parameters():
+			if param.requires_grad:
+				print(name, param.shape)
+	elif args.tokens is not None:
+		with open(args.tokens, 'r', encoding='utf-8') as f:
+			text = f.readlines()
+		ind = [int(idx.strip()) for idx in text]
+		shuffled_embeddings = shuffle_spec(embed_prior, ind)
+		model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)
 	else:
 		shuffled_embeddings = shuffle_embeddings(embed_prior)
 		model.transformer.wte.weight = nn.Parameter(shuffled_embeddings)

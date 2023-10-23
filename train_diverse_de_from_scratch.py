@@ -35,7 +35,7 @@ parser.add_argument('--group', type=str, help='Group parameter for wandb')
 args = parser.parse_args()
 
 wandb.init(group=args.group)
-
+"""
 tiger = pd.read_csv("tiger_UTF-8.txt", sep="\t", quoting=csv.QUOTE_NONE, encoding='utf-8', names=["text"])
 news_corpus = pd.read_csv("10kGNAD/articles.csv", sep="\t", header=0)
 europarl = pd.read_csv("europarl.txt", sep="\t", names=["text"])
@@ -70,32 +70,30 @@ corpora = corpora[["text"]]
 
 print(f"CONCAT: {len(corpora)} {corpora}")
 print(f"Length of the pandas corpus: {len(corpora)}")
-
+"""
 datasets = DatasetDict()
-train = load_dataset("wikipedia", "20220301.de", split='train[:70%]')
+train = load_dataset("wikipedia", "20220301.de", split='train[:10%]') #70
 val_wiki = load_dataset("wikipedia", "20220301.de", split='train[90:95%]')
-#tiger = load_dataset("text", data_files={'train': 'tiger_UTF-8.txt'})
-#news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
-#europarl = load_dataset("text", data_files={'train': 'europarl.txt'}
+tiger = load_dataset("text", data_files={'train': 'tiger_UTF-8.txt'})
+news_corpus = load_dataset("csv", delimiter="\t", data_files={'train': '10kGNAD/articles.csv'})
+europarl = load_dataset("text", data_files={'train': 'europarl.txt'})
 #d["train"] = concatenate_datasets([tiger, news_corpus, europarl], split='train[:95%]')
-#datasets["train"]= concatenate_datasets(d["train"], train)
+datasets["wiki_train"]= train
+datasets["wiki_val"] = val_wiki
+datasets["tiger"] = tiger ["train"]
+datasets["news_corpus"] = news_corpus["train"]
+datasets["europarl"] = europarl ["train"]
+
+#dataset = Dataset.from_pandas(corpora)
+
+#train = train.filter(lambda example, indice: indice < math.ceil(max_len*0.9), with_indices=True)
+
+#datasets["train"] = concatenate_datasets([dataset, train])
 #datasets["validation1"] = val_wiki
-#datasets["validation2"] = load_dataset(tiger
-#datasets["validation3"] = load_dataset
+#datasets["validation2"] = Dataset.from_pandas(tiger[math.ceil(len(tiger)*0.9):])
+#datasets["validation3"] = Dataset.from_pandas(news_corpus[math.ceil(len(news_corpus)*0.9):])
+#datasets["validation4"] = Dataset.from_pandas(europarl[math.ceil(len(europarl)*0.9):])
 
-dataset = Dataset.from_pandas(corpora)
-
-train = train.filter(lambda example, indice: indice < math.ceil(max_len*0.9), with_indices=True)
-
-datasets["train"] = concatenate_datasets([dataset, train])
-datasets["validation1"] = val_wiki
-datasets["validation2"] = Dataset.from_pandas(tiger[math.ceil(len(tiger)*0.9):])
-datasets["validation3"] = Dataset.from_pandas(news_corpus[math.ceil(len(news_corpus)*0.9):])
-datasets["validation4"] = Dataset.from_pandas(europarl[math.ceil(len(europarl)*0.9):])
-
-datasets["train"].shuffle()
-
-print(f"Length of Dataset: {len(datasets['train']['text'])}")
 
 from datasets import ClassLabel, Value
 import random
@@ -130,26 +128,25 @@ config = AutoConfig.from_pretrained(
 #config = args.config
 model = GPT2LMHeadModel(config)
 
-tokenizer.pad_token = tokenizer.eos_token
+#tokenizer.pad_token = tokenizer.eos_token
 
 def tokenize_function(examples):
-	return tokenizer(examples["text"], padding='max_length', max_length=256)
+	return tokenizer(examples["text"])
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True, num_proc=4, remove_columns=["text"])
 
-counter = 0
+#counter = 0
 block_size=256
 
-tokenized_datasets["train"] = tokenized_datasets["train"].map(remove_columns = ["__index_level_0__", "url", "title", "id"])
+#tokenized_datasets["train"] = tokenized_datasets["train"].map(remove_columns = ["__index_level_0__", "url", "title", "id"])
 
 def group_texts(examples):
 	# Concatenate all texts.
-	try:
-		concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
+	concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
 		#except TypeError:
 		#	concatenated_examples = {k: list(chain(*[examples[k]])) for k in examples.keys()}
-	except TypeError:
-		concatenated_examples = examples
+	#except TypeError:
+	#	concatenated_examples = examples
 	total_length = len(concatenated_examples[list(examples.keys())[0]])
 	# We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
 	# customize this part to your needs.
@@ -169,14 +166,36 @@ def group_texts(examples):
 	#	counter += 1
 
 lm_datasets = tokenized_datasets.map(
-	group_texts#,
-	#batched=True,
-	#batch_size=1000,
-	#num_proc=4,
+	group_texts,
+	batched=True,
+	batch_size=1000,
+	num_proc=4,
 )
 
-print(lm_datasets["train"])
-print(lm_datasets["train"][0])
+
+max_len = max([len(lm_datasets[d]["input_ids"]) for d in lm_datasets])
+train_len = math.ceil(max_len*0.9)
+val_len = max_len
+
+
+wiki_train_len = math.ceil(len(lm_datasets["wiki_train"]["input_ids"])*0.9) if len(lm_datasets["wiki_train"]["input_ids"]) < train_len else train_len
+tiger_train_len = math.ceil(len(lm_datasets["tiger"]["input_ids"])*0.9) if len(lm_datasets["tiger"]["input_ids"]) < train_len else train_len
+news_train_len = math.ceil(len(lm_datasets["news_corpus"]["input_ids"])*0.9) if len(lm_datasets["news_corpus"]["input_ids"]) < train_len else train_len
+europarl_train_len = math.ceil(len(lm_datasets["europarl"]["input_ids"])*0.9) if len(lm_datasets["europarl"]["input_ids"]) < train_len else train_len
+
+wiki_short = lm_datasets["wiki_train"].filter(lambda example, indice: indice < wiki_train_len, with_indices=True)
+tiger_short = lm_datasets["tiger"].filter(lambda example, indice: indice < tiger_train_len, with_indices=True)
+tiger_val = lm_datasets["tiger"].filter(lambda example, indice: indice < val_len, with_indices=True).filter(lambda example, indice: indice >=  tiger_train_len, with_indices=True)
+news_short = lm_datasets["news_corpus"].filter(lambda example, indice: indice < news_train_len, with_indices=True)
+news_val = lm_datasets["news_corpus"].filter(lambda example, indice: indice < val_len, with_indices=True).filter(lambda example, indice: indice >=  news_train_len, with_indices=True)
+europarl_short = lm_datasets["europarl"].filter(lambda example, indice: indice < europarl_train_len, with_indices=True)
+europarl_val = lm_datasets["europarl"].filter(lambda example, indice: indice < val_len, with_indices=True).filter(lambda example, indice: indice >=  europarl_train_len, with_indices=True)
+
+
+train = concatenate_datasets([wiki_short, tiger_short, news_short, europarl_short])
+
+# shuffle train data
+train.shuffle()
 
 from transformers import Trainer, TrainingArguments
 from transformers.integrations import *
@@ -187,8 +206,8 @@ training_args = TrainingArguments(
 	evaluation_strategy = "steps",
 	learning_rate=args.lr,
 	weight_decay=0.01,
-	num_train_epochs=20,
-	#max_steps=100000,
+	#num_train_epochs=20,
+	max_steps=165000,
 	eval_steps=15000,
 	save_steps=15000,
 	warmup_steps = 30000,
@@ -199,8 +218,8 @@ training_args = TrainingArguments(
 trainer = My_Trainer(
 	model=model,
 	args=training_args,
-	train_dataset=lm_datasets["train"],
-	eval_dataset={'wikipedia': lm_datasets["validation1"], 'tiger': lm_datasets["validation2"], '10kGNAD': lm_datasets["validation3"], 'europarl': lm_datasets["validation4"]}
+	train_dataset=train,
+	eval_dataset={'wikipedia': lm_datasets['wiki_val'], 'tiger': tiger_val, '10kGNAD': news_val, 'europarl': europarl_val}
 )
 
 
