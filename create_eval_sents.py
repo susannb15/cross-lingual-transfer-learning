@@ -1,26 +1,38 @@
-import spacy
-from collections import defaultdict
-from collections import Counter
-from tqdm import tqdm
+import pandas as pd
 
-nlp = spacy.load("de_core_news_sm")
-with open("probing/spacy_sents.txt", "r", encoding='utf-8') as f:
-	text = f.readlines()
+# read in nouns and verbs
+nouns = pd.read_csv("nouns_labeled.csv")
+verbs = pd.read_csv("verbs_labeled.csv")
 
-text = text[:10000]
 
-tokens = list()
-tok2pos = defaultdict(lambda: defaultdict(int))
-pos2toks = defaultdict(set)
+# template 1: simple - DET NOUN VERB *POSS*
+simple = list()
+num_m = 0
+num_f = 0
+for idx_n, row_n in nouns.iterrows():
+	# build subject DET NOUN
+	if row_n.gender == "m" and row_n.number == "sg":
+		subj = ("Der "+row_n.word, "m")
+		num_m += 1
+	elif row_n.gender == "n" and row_n.number == "sg":
+		subj = ("Das "+row_n.word, "m")
+		num_m += 1
+	else:
+		subj = ("Die "+row_n.word, "f")
+		num_f += 1
+	for idx_v, row_v in verbs.iterrows():
+		if row_n.number == row_v.number:
+			sent = subj[0]+" "+row_v.word
+			simple.append((sent, subj[1]))
+print(f"Checking for label balance m - f: {num_m - num_f}")
+with open("eval_sents_simple.txt", "w+", encoding='utf-8') as f:
+	f.write("sent\tlabel")
+	for sent, label in simple:
+		f.write("\n"+sent+"\t"+label)
 
-for sent in nlp.pipe(tqdm(text)):
-	for word in sent:
-		tokens.append(word.text)
-		tok2pos[word.text][word.pos_] += 1
-		pos2toks[word.pos_].add(word.text)
+# template 2: adv - DET NOUN VERB ADV *POSS* increased distance by one word
 
-token_count = Counter(tokens)
+# template 3: genitiv - DET NOUN GEN(DET NOUN) VERB *POSS* genitiv as attractor
+# create separate datasets: one with attractor (different gender than SUBJ) and one without (POSS matches both SUBJ and GENITIV)
 
-print(list(tok2pos.items())[:5])
-print(pos2toks["DET"])
-
+# template 4: nebensatz - DET NOUN, REL(PP??), VERB
