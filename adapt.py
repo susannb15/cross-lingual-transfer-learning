@@ -105,6 +105,14 @@ def shuffle_embeddings(embeddings):
     shuffled = embeddings[idx]
     return shuffled
 
+def shuffle_layer(layer):
+	"""
+	Shuffles a different layer.
+	"""
+	idx = torch.randperm(layer.shape[0])
+	shuffled = layer[idx]
+	return shuffled
+
 def gauss(embeddings, intensity):
     """
     Returns an embedding matrix with gaussian noise.
@@ -205,10 +213,15 @@ def main():
 		gauss_embeddings = gauss(embed_prior, args.noise_intensity)
 		model.transformer.wte.weight = nn.Parameter(gauss_embeddings)
 	elif args.layer is not None:
+		#for n, p in model.named_parameters():
+		#	if p.requires_grad:
+		#		print(n)
+		
+		layer_prior = model.transformer.c_proj.weight 
 		print(f"Shuffle and adapt weights of layer {args.layer}.")
-		for name, param in model.named_parameters():
-			if param.requires_grad:
-				print(name, param.shape)
+		layer_shuffled = shuffle_layer(layer_prior)
+		model.transformer.c_proj.weight = nn.Parameter(layer_shuffled)
+		print(f"COMPARE LAYERS: {layer_prior == layer_shuffled}")
 	elif args.tokens is not None:
 		with open(args.tokens, 'r', encoding='utf-8') as f:
 			text = f.readlines()
